@@ -1,13 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { PrismaService } from 'src/prisma/database/prisma.service';
+import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
 
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService,
-    private readonly prisma: PrismaService
 
   ) {}
 
@@ -17,18 +16,19 @@ export class ProductController {
   }
 
   @Get()
+  @AllowAnonymous()
   findAll() {
-    return this.prisma.product.findMany();
+    return this.productService.findAll()
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.productService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.update(+id, updateProductDto);
+    return this.productService.update(id, updateProductDto);
   }
 
   @Delete(':id')
