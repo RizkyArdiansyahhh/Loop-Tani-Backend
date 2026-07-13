@@ -21,7 +21,8 @@
     "dev": "nest start --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/seed.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.6.23",
@@ -30,6 +31,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.4.5",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@thallesp/nestjs-better-auth": "^2.7.0",
@@ -83,5 +85,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/seed.ts"
   }
 }

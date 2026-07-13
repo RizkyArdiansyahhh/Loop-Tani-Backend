@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProductModule } from './module/product/product.module';
+import { CategoryModule } from './module/category/category.module';
+import { CartModule } from './module/cart/cart.module';
 import { PrismaModule } from './infra/database/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
@@ -14,7 +16,10 @@ import { auth } from './infra/auth/auth';
       envFilePath: '.env',
     }),
     AuthModule.forRoot({ auth }),
-    ProductModule, PrismaModule
+    PrismaModule,
+    ProductModule,
+    CategoryModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -32,6 +32,9 @@ model User {
   accounts      Account[]
   roles         UserRole[]
   sellerProfile SellerProfile?
+  products      Product[]
+  favorites     ProductFavorite[]
+  cart          Cart?
 }
 
 model UserRole {
@@ -53,15 +56,96 @@ model SellerProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Product {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  price       Float
-  stock       Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ─────────────────────────────────────────────
+// Product Enums
+// ─────────────────────────────────────────────
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  ARCHIVED
 }
+
+enum ProductCondition {
+  NEW
+  USED
+}
+
+// ─────────────────────────────────────────────
+// Category Enum
+// ─────────────────────────────────────────────
+
+enum ProductCategory {
+  AGRICULTURAL_WASTE @map("agricultural-waste")
+  PROCESSED_PRODUCT  @map("processed-product")
+  SECONDHAND         @map("secondhand")
+}
+
+// ─────────────────────────────────────────────
+// Product
+// ─────────────────────────────────────────────
+
+model Product {
+  id            String           @id @default(uuid())
+  sellerId      String
+  title         String
+  slug          String           @unique
+  description   String
+  price         Float
+  stock         Int              @default(0)
+  condition     ProductCondition @default(NEW)
+  status        ProductStatus    @default(DRAFT)
+  isFeatured    Boolean          @default(false)
+  province      String?
+  city          String?
+  sellerRating  Float            @default(0.0)
+  totalReview   Int              @default(0)
+  category      ProductCategory
+  weight        Int              @default(1000)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  seller    User              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  images    ProductImage[]
+  favorites ProductFavorite[]
+  cartItems CartItem[]
+
+  @@index([sellerId])
+  @@index([category])
+  @@index([status])
+  @@index([slug])
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  imageUrl  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductFavorite {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+// ─────────────────────────────────────────────
+// Auth Models (managed by better-auth)
+// ─────────────────────────────────────────────
 
 model Session {
   id        String   @id
@@ -109,4 +193,34 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+// ─────────────────────────────────────────────
+// Cart & Cart Items
+// ─────────────────────────────────────────────
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
 }
