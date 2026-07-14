@@ -287,6 +287,8 @@ async function main() {
     create: {
       userId: SELLER_ID,
       storeName: 'Tani Makmur Jaya',
+      storeSlug: 'tani-makmur-jaya',
+      status: 'ACTIVE',
       description: 'Petani organik berpengalaman dari Jawa Tengah',
       address: 'Jl. Sawah Indah No. 12, Semarang',
     },
@@ -298,6 +300,8 @@ async function main() {
     create: {
       userId: SELLER_2_ID,
       storeName: 'Kebun Segar Bu Siti',
+      storeSlug: 'kebun-segar-bu-siti',
+      status: 'ACTIVE',
       description: 'Sayur dan buah segar langsung dari kebun',
       address: 'Jl. Kebun Raya No. 45, Bogor',
     },
@@ -369,11 +373,102 @@ async function main() {
     console.log(`  ✅ [${product.status}]${featured} ${product.title} — Rp${product.price.toLocaleString('id-ID')} (${product.category})`);
   }
 
+  // ── 3. Seed Knowledge Content ──────────────────────────────────────────────
+  console.log('\n📚 Seeding knowledge contents...');
+  
+  const KNOWLEDGE_DATA = [
+    {
+      type: 'ARTICLE' as const,
+      title: 'Cara Mengolah Jerami Padi Menjadi Briket Biomassa Bernilai Tinggi',
+      slug: 'cara-olah-jerami-briket',
+      content: 'Jerami padi sering kali hanya dibakar setelah masa panen selesai. Padahal, pembakaran jerami menghasilkan polusi udara yang merugikan kesehatan dan lingkungan sekitar. Salah satu solusi terbaik untuk memanfaatkan limbah ini adalah dengan mengolahnya menjadi briket biomassa. Briket dari jerami ini memiliki nilai kalori yang cukup tinggi dan dapat digunakan sebagai bahan bakar alternatif rumah tangga maupun industri kecil.\n\nProses pembuatan briket jerami padi terbilang mudah. Pertama-tama, jerami yang telah dikeringkan harus diarangkan (dikarbonisasi) terlebih dahulu menggunakan drum pembakaran dengan kondisi oksigen minimal. Pengarangan ini bertujuan untuk meningkatkan nilai kalor briket dan meminimalkan asap saat briket digunakan nanti.\n\nSetelah diperoleh arang jerami, haluskan arang tersebut hingga menjadi bubuk kasar. Campurkan bubuk arang jerami dengan perekat alami seperti tepung tapioka (kanji) yang sudah dilarutkan dalam air panas. Perbandingan yang disarankan adalah 90% arang jerami and 10% perekat tapioka. Aduk adonan hingga merata dan terasa liat.\n\nLangkah terakhir adalah pencetakan. Masukkan adonan ke dalam cetakan briket sederhana (bisa menggunakan pipa paralon bekas atau cetakan besi manual) lalu tekan dengan kuat agar padat. Jemur briket basah di bawah sinar matahari selama 2-3 hari hingga benar-benar kering dan keras. Briket jerami padi siap digunakan sebagai bahan bakar ramah lingkungan!',
+      category: 'OLAHAN' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&h=400&q=80',
+      rewardPoint: 20,
+      estimatedReadingMinutes: 5,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Mengenal Kompos TKKS (Tandan Kosong Kelapa Sawit) & Manfaat Tanah',
+      slug: 'mengenal-kompos-tkks',
+      content: 'Tandan Kosong Kelapa Sawit (TKKS) merupakan limbah padat terbesar yang dihasilkan oleh pabrik kelapa sawit. Jika dibiarkan menumpuk, limbah ini dapat menimbulkan bau tidak sedap serta menjadi sarang penyakit bagi tanaman kelapa sawit itu sendiri. Namun, melalui proses pengomposan yang tepat, TKKS dapat diubah menjadi pupuk organik bermutu tinggi yang sangat kaya akan unsur hara kalium.\n\nProses pengomposan TKKS biasanya dikombinasikan dengan limbah cair pabrik kelapa sawit (LCPKS) yang kaya akan nitrogen. Campuran kedua bahan organik ini akan mempercepat proses dekomposi mikroba karena memiliki rasio Karbon (C) dan Nitrogen (N) yang ideal. Bakteri pengurai akan bekerja aktif memecah bahan organik keras dalam TKKS menjadi senyawa tanah yang subur.\n\nManfaat utama penggunaan kompos TKKS adalah untuk memperbaiki struktur fisik tanah, meningkatkan kapasitas menahan air (water holding capacity), serta menyediakan unsur hara makro dan mikro bagi tanaman. Kompos ini sangat cocok diaplikasikan pada tanah berpasir atau lahan marginal yang kekurangan bahan organik aktif.\n\nUntuk menggunakannya, taburkan kompos TKKS secara merata di sekeliling piringan tanaman kelapa sawit atau campurkan ke dalam lubang tanam hortikultura. Dengan memanfaatkan TKKS secara sirkular, biaya pemupukan kimia dapat dipangkas hingga 30%, sekaligus meminimalkan dampak lingkungan negatif pabrik sawit.',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=600&h=400&q=80',
+      rewardPoint: 20,
+      estimatedReadingMinutes: 4,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Panduan Perawatan Rutin Mesin Pencacah Rumput Petani Mandiri',
+      slug: 'servis-mesin-pencacah-rumput',
+      content: 'Mesin pencacah rumput atau chopper pakan ternak adalah investasi penting bagi peternak berskala menengah ke atas. Alat ini mempermudah proses pembuatan pakan silase maupun pencacahan rumput gajah harian. Namun, karena sering berhadapan dengan bahan berserat tinggi dan getah rumput yang lengket, mesin ini memerlukan perawatan ekstra agar kinerjanya tidak cepat menurun.\n\nSalah satu masalah utama yang sering dialami petani adalah pisau pencacah yang tumpul. Pisau yang tumpul akan membuat putaran mesin terasa berat, boros bahan bakar, dan hasil cacahan menjadi tidak merata. Disarankan untuk memeriksa ketajaman pisau setiap 20 jam penggunaan dan mengasahnya secara berkala menggunakan mesin gerinda tangan.\n\nSelain pisau, kebersihan ruang pencacah juga harus diperhatikan. Setiap kali selesai digunakan, bersihkan sisa-sisa rumput dan getah yang menempel pada dinding dalam mesin. Getah rumput yang mengering dan menumpuk dapat mengeras seperti semen, menyumbat saringan, serta memicu karat pada bagian logam sensitif mesin.\n\nJangan lupa untuk secara rutin memeriksa pelumasan pada bearing poros utama dan rantai transmisi motor penggerak. Gunakan gemuk (grease) tahan panas berkuaitas tinggi setiap bulan sekali. Perawatan sederhana dan disiplin ini dapat memperpanjang umur pakai chopper pakan ternak Anda hingga bertahun-tahun lamanya.',
+      category: 'ALAT' as const,
+      difficulty: 'MENENGAH' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&h=400&q=80',
+      rewardPoint: 30,
+      estimatedReadingMinutes: 6,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_2_ID
+    },
+    {
+      type: 'VIDEO' as const,
+      title: 'Langkah Praktis Membuat Briket Berkualitas dari Jerami Padi',
+      slug: 'praktik-briket-jerami',
+      content: 'Video ini mendemonstrasikan langkah demi langkah pembuatan briket biomassa dari jerami padi kering. Tonton detail proses pengarangan tanpa oksigen, penghalusan arang, pencampuran kanji, hingga teknik penekanan cetakan briket buatan sendiri.',
+      category: 'OLAHAN' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&h=400&q=80',
+      rewardPoint: 30,
+      videoDuration: 435,
+      secureUrl: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://res.cloudinary.com/demo/video/upload/dog.jpg',
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID
+    },
+    {
+      type: 'VIDEO' as const,
+      title: 'Proses Pengomposan Tandan Kosong Kelapa Sawit Secara Cepat',
+      slug: 'proses-kompos-tkks',
+      content: 'Pelajari rahasia pengomposan cepat limbah padat kelapa sawit (TKKS) menggunakan mikroba aktif. Video ini menunjukkan tata cara tumpukan windrow, penyiraman cairan probiotik, monitoring suhu, serta indikator fisik kompos matang.',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=600&h=400&q=80',
+      rewardPoint: 25,
+      videoDuration: 342,
+      secureUrl: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://res.cloudinary.com/demo/video/upload/dog.jpg',
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_2_ID
+    }
+  ];
+
+  let knowledgeCount = 0;
+  for (const item of KNOWLEDGE_DATA) {
+    const existing = await prisma.knowledgeContent.findUnique({ where: { slug: item.slug } });
+    if (existing) {
+      console.log(`  ⏭️  Skipped (already exists): ${item.title}`);
+      continue;
+    }
+
+    await prisma.knowledgeContent.create({
+      data: item,
+    });
+    knowledgeCount++;
+    console.log(`  ✅ [${item.type}] ${item.title}`);
+  }
+
   console.log();
   console.log('─'.repeat(50));
   console.log(`✨ Seed complete!`);
   console.log(`   👤 Sellers  : 2`);
   console.log(`   📦 Products : ${productCount}`);
+  console.log(`   📚 Knowledge: ${knowledgeCount}`);
   console.log('─'.repeat(50));
 
   await prisma.$disconnect();

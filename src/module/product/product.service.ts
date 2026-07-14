@@ -19,6 +19,7 @@ export class ProductService {
   // ─────────────────────────────────────────────
 
   async create(sellerId: string, dto: CreateProductDto) {
+    await this.assertActiveSeller(sellerId);
     const slug = await this.generateUniqueSlug(dto.title);
 
     const product = await this.prisma.product.create({
@@ -176,6 +177,7 @@ export class ProductService {
   // ─────────────────────────────────────────────
 
   async update(id: string, sellerId: string, dto: UpdateProductDto) {
+    await this.assertActiveSeller(sellerId);
     await this.assertOwnership(id, sellerId);
 
     // Regenerate slug only if title changes
@@ -226,6 +228,7 @@ export class ProductService {
   // ─────────────────────────────────────────────
 
   async remove(id: string, sellerId: string) {
+    await this.assertActiveSeller(sellerId);
     await this.assertOwnership(id, sellerId);
 
     await this.prisma.product.delete({ where: { id } });
@@ -323,6 +326,16 @@ export class ProductService {
 
     if (product.sellerId !== sellerId) {
       throw new ForbiddenException('You do not own this product');
+    }
+  }
+
+  private async assertActiveSeller(sellerId: string) {
+    const profile = await this.prisma.sellerProfile.findUnique({
+      where: { userId: sellerId },
+    });
+
+    if (!profile || profile.status !== 'ACTIVE') {
+      throw new ForbiddenException('Only active sellers may perform this operation.');
     }
   }
 

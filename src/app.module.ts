@@ -8,6 +8,11 @@ import { PrismaModule } from './infra/database/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { auth } from './infra/auth/auth';
+import { ProfileModule } from './module/profile/profile.module';
+import { SellerModule } from './module/seller/seller.module';
+import { CloudinaryModule } from './infra/cloudinary/cloudinary.module';
+import { KnowledgeModule } from './module/knowledge/knowledge.module';
+import { PointsModule } from './module/points/points.module';
 
 @Module({
   imports: [
@@ -17,9 +22,14 @@ import { auth } from './infra/auth/auth';
     }),
     AuthModule.forRoot({ auth }),
     PrismaModule,
+    CloudinaryModule,
     ProductModule,
     CategoryModule,
     CartModule,
+    ProfileModule,
+    SellerModule,
+    KnowledgeModule,
+    PointsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

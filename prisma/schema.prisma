@@ -18,12 +18,20 @@ enum Role {
   ADMIN
 }
 
+enum SellerStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
 model User {
   id            String         @id
   name          String
   email         String         @unique
   emailVerified Boolean        @default(false)
-  image         String?
+  image          String?
+  avatarPublicId String?
   phone         String?
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
@@ -35,6 +43,10 @@ model User {
   products      Product[]
   favorites     ProductFavorite[]
   cart          Cart?
+  pointAccount      UserPointAccount?
+  pointTransactions PointTransaction[]
+  learningProgress  LearningProgress[]
+  authoredContent   KnowledgeContent[]
 }
 
 model UserRole {
@@ -47,13 +59,26 @@ model UserRole {
 }
 
 model SellerProfile {
-  id          String  @id @default(uuid())
-  userId      String  @unique
-  storeName   String
-  description String?
-  address     String?
+  id           String       @id @default(uuid())
+  userId       String       @unique
+  storeName    String
+  storeSlug    String       @unique
+  description  String?
+  province     String?
+  city         String?
+  address      String?
+  postalCode   String?
+  phone        String?
+  logoUrl      String?
+  logoPublicId String?
+  status       SellerStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([storeSlug])
+  @@index([status])
 }
 
 // ─────────────────────────────────────────────
@@ -223,4 +248,120 @@ model CartItem {
   @@unique([cartId, productId])
   @@index([cartId])
   @@index([productId])
+}
+
+// ─────────────────────────────────────────────
+// Knowledge Center & Gamification Models
+// ─────────────────────────────────────────────
+
+enum ContentType {
+  ARTICLE
+  VIDEO
+}
+
+enum ContentStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+}
+
+enum ContentCategory {
+  LIMBAH   @map("limbah")
+  OLAHAN   @map("olahan")
+  ALAT     @map("alat")
+}
+
+enum ContentDifficulty {
+  PEMULA    @map("pemula")
+  MENENGAH  @map("menengah")
+}
+
+enum PointTransactionType {
+  EARN
+  REDEEM
+}
+
+enum PointTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model KnowledgeContent {
+  id                      String            @id @default(uuid())
+  type                    ContentType
+  title                   String
+  slug                    String            @unique
+  content                 String
+  category                ContentCategory
+  difficulty              ContentDifficulty
+  imageUrl                String?
+  rewardPoint             Int               @default(20)
+  estimatedReadingMinutes Int?
+  videoDuration           Int?
+  cloudinaryPublicId      String?
+  secureUrl               String?
+  thumbnailUrl            String?
+  status                  ContentStatus     @default(DRAFT)
+  authorId                String
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  author           User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  learningProgress LearningProgress[]
+
+  @@index([authorId])
+  @@index([status])
+  @@index([slug])
+}
+
+model UserPointAccount {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  totalPoint    Int       @default(0)
+  lifetimePoint Int       @default(0)
+  tier          PointTier @default(BRONZE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PointTransaction {
+  id          String               @id @default(uuid())
+  userId      String
+  amount      Int
+  type        PointTransactionType
+  description String
+  sourceId    String?
+  sourceType  String?
+  createdAt   DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model LearningProgress {
+  id                   String   @id @default(uuid())
+  userId               String
+  contentId            String
+  scrollPercentage     Float    @default(0)
+  activeReadingSeconds Int      @default(0)
+  watchedPercentage    Float    @default(0)
+  completed            Boolean  @default(false)
+  rewardClaimed        Boolean  @default(false)
+  completedAt          DateTime?
+  updatedAt            DateTime @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content KnowledgeContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@index([contentId])
 }
