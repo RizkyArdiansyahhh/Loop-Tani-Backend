@@ -5,6 +5,7 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,7 +17,7 @@ import {
   ApiConflictResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
-import { Session } from '@thallesp/nestjs-better-auth';
+import { Session, AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import { SellerService } from './seller.service';
 import { RegisterSellerDto } from './dto/register-seller.dto';
@@ -82,5 +83,17 @@ export class SellerController {
     @Body() dto: SimulateApproveDto,
   ) {
     return this.sellerService.simulateApprove(session.user.id, dto);
+  }
+
+  @Get('store/:slug')
+  @AllowAnonymous()
+  @ApiOperation({
+    summary: 'Get public seller storefront details by store slug',
+    description: 'Fetch public details of a seller store. Endpoint is publicly accessible.',
+  })
+  @ApiResponse({ status: 200, description: 'Store profile retrieved successfully' })
+  @ApiNotFoundResponse({ description: 'Store not found or not active' })
+  getStoreBySlug(@Param('slug') slug: string) {
+    return this.sellerService.getStoreBySlug(slug);
   }
 }

@@ -50,7 +50,14 @@ export class ProductService {
       include: {
         images: { orderBy: { order: 'asc' } },
         seller: {
-          select: { id: true, name: true, image: true },
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            sellerProfile: {
+              select: { storeSlug: true },
+            },
+          },
         },
         _count: { select: { favorites: true } },
       },
@@ -76,6 +83,8 @@ export class ProductService {
       city,
       minSellerRating,
       favoriteOnly,
+      sellerId,
+      storeSlug,
     } = dto;
     const skip = (page - 1) * limit;
 
@@ -105,6 +114,14 @@ export class ProductService {
           some: { userId },
         },
       }),
+      ...(sellerId && { sellerId }),
+      ...(storeSlug && {
+        seller: {
+          sellerProfile: {
+            storeSlug,
+          },
+        },
+      }),
     };
 
     const orderBy = this.buildOrderBy(sort);
@@ -113,7 +130,16 @@ export class ProductService {
       images: {
         orderBy: { order: 'asc' },
       },
-      seller: { select: { id: true, name: true, image: true } },
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          sellerProfile: {
+            select: { storeSlug: true },
+          },
+        },
+      },
       _count: { select: { favorites: true } },
     };
 
@@ -151,7 +177,14 @@ export class ProductService {
     const include: Prisma.ProductInclude = {
       images: { orderBy: { order: 'asc' } },
       seller: {
-        select: { id: true, name: true, image: true },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          sellerProfile: {
+            select: { storeSlug: true },
+          },
+        },
       },
       _count: { select: { favorites: true } },
     };
@@ -300,7 +333,12 @@ export class ProductService {
       category: product.category,
       thumbnail: product.images?.[0]?.imageUrl || null,
       images: product.images || [],
-      seller: product.seller,
+      seller: {
+        id: product.seller.id,
+        name: product.seller.name,
+        image: product.seller.image,
+        storeSlug: product.seller.sellerProfile?.storeSlug || null,
+      },
       sellerRating: product.sellerRating,
       totalReview: product.totalReview,
       location:

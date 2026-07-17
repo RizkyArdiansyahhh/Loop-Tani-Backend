@@ -115,4 +115,14 @@ export class GetProductsDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   favoriteOnly?: boolean;
+
+  @ApiPropertyOptional({ example: 'uuid-penjual', description: 'Filter berdasarkan seller ID' })
+  @IsOptional()
+  @IsString()
+  sellerId?: string;
+
+  @ApiPropertyOptional({ example: 'tani-makmur', description: 'Filter berdasarkan store slug' })
+  @IsOptional()
+  @IsString()
+  storeSlug?: string;
 }

@@ -185,4 +185,68 @@ export class SellerService {
       return updatedProfile;
     });
   }
+
+  async getStoreBySlug(slug: string) {
+    const slugLower = slug.trim().toLowerCase();
+    const profile = await this.prisma.sellerProfile.findUnique({
+      where: { storeSlug: slugLower },
+      include: {
+        user: {
+          select: {
+            name: true,
+            image: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!profile || profile.status !== SellerStatus.ACTIVE) {
+      throw new NotFoundException('Toko tidak ditemukan atau sedang tidak aktif');
+    }
+
+    // Get active products aggregation
+    const activeProducts = await this.prisma.product.findMany({
+      where: {
+        sellerId: profile.userId,
+        status: 'ACTIVE',
+      },
+      select: {
+        sellerRating: true,
+        totalReview: true,
+      },
+    });
+
+    const totalProducts = activeProducts.length;
+    const totalReview = activeProducts.reduce((sum, p) => sum + p.totalReview, 0);
+    const averageRating = totalReview > 0
+      ? Number((activeProducts.reduce((sum, p) => sum + p.sellerRating, 0) / totalProducts).toFixed(1))
+      : null;
+
+    return {
+      id: profile.id,
+      userId: profile.userId,
+      storeName: profile.storeName,
+      storeSlug: profile.storeSlug,
+      description: profile.description,
+      province: profile.province,
+      city: profile.city,
+      address: profile.address,
+      postalCode: profile.postalCode,
+      phone: profile.phone,
+      logoUrl: profile.logoUrl,
+      status: profile.status,
+      createdAt: profile.createdAt,
+      user: {
+        name: profile.user.name,
+        image: profile.user.image,
+        joinedAt: profile.user.createdAt,
+      },
+      stats: {
+        totalProducts,
+        totalReview,
+        averageRating,
+      },
+    };
+  }
 }
