@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaClient, ProductStatus, ProductCondition, ProductCategory } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { auth } from '../src/infra/auth/auth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: slugify
@@ -461,6 +462,83 @@ async function main() {
     });
     knowledgeCount++;
     console.log(`  ✅ [${item.type}] ${item.title}`);
+  }
+
+  // ── 4. Seed Admin User ──────────────────────────────────────────────────────
+  console.log('👤 Seeding admin user...');
+  const adminEmail = 'admin@looptani.id';
+  let adminUser = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
+
+  if (!adminUser) {
+    console.log('   Creating new credentials admin account...');
+    const res = await auth.api.signUpEmail({
+      headers: new Headers(),
+      body: {
+        email: adminEmail,
+        password: 'AdminPassword123!',
+        name: 'Platform Admin',
+      },
+    });
+    if (!res || !res.user) {
+      throw new Error('Gagal melakukan pendaftaran admin via Better Auth');
+    }
+    adminUser = res.user as any;
+  }
+
+  // Ensure ADMIN role
+  await prisma.userRole.upsert({
+    where: { userId_role: { userId: adminUser!.id, role: 'ADMIN' } },
+    update: {},
+    create: { userId: adminUser!.id, role: 'ADMIN' },
+  });
+
+  // ── 5. Seed Categories ──────────────────────────────────────────────────────
+  console.log('🏷️ Seeding categories...');
+  const DEFAULT_CATEGORIES = [
+    { name: 'Limbah Pertanian', slug: 'agricultural-waste', type: 'MARKETPLACE' as const },
+    { name: 'Produk Olahan', slug: 'processed-product', type: 'MARKETPLACE' as const },
+    { name: 'Alat Secondhand', slug: 'secondhand', type: 'MARKETPLACE' as const },
+    { name: 'Limbah Organik', slug: 'limbah', type: 'LEARNING' as const },
+    { name: 'Produk Olahan', slug: 'olahan', type: 'LEARNING' as const },
+    { name: 'Alat & Mesin Tani', slug: 'alat', type: 'LEARNING' as const },
+  ];
+
+  for (const cat of DEFAULT_CATEGORIES) {
+    await prisma.category.upsert({
+      where: { slug: cat.slug },
+      update: { name: cat.name, type: cat.type },
+      create: cat,
+    });
+  }
+
+  // ── 6. Seed Rewards ────────────────────────────────────────────────────────
+  console.log('🎁 Seeding rewards...');
+  const DEFAULT_REWARDS = [
+    {
+      title: 'Bebas Biaya Layanan Penjual (Diskon 5%)',
+      description: 'Potongan komisi administrasi toko sebesar 5% selama 30 hari.',
+      pointsCost: 500,
+      isActive: true,
+    },
+    {
+      title: 'Voucher Belanja Rp20.000',
+      description: 'Diskon belanja di Marketplace LoopTani sebesar Rp20.000.',
+      pointsCost: 800,
+      isActive: true,
+    },
+  ];
+
+  for (const reward of DEFAULT_REWARDS) {
+    const existingReward = await prisma.reward.findFirst({
+      where: { title: reward.title },
+    });
+    if (!existingReward) {
+      await prisma.reward.create({
+        data: reward,
+      });
+    }
   }
 
   console.log();

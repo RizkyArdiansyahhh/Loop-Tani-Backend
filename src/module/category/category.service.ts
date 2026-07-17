@@ -6,10 +6,16 @@ export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: any) {
-    throw new ForbiddenException('Kategori bersifat statis dan tidak dapat ditambah.');
+    throw new ForbiddenException('Kategori bersifat statis di publik. Gunakan panel admin.');
   }
 
   async findAll() {
+    // Fetch only MARKETPLACE categories for marketplace display
+    const categories = await this.prisma.category.findMany({
+      where: { type: 'MARKETPLACE' },
+      orderBy: { name: 'asc' },
+    });
+
     const groups = await this.prisma.product.groupBy({
       by: ['category'],
       where: { status: 'ACTIVE' },
@@ -17,48 +23,38 @@ export class CategoryService {
     });
 
     const countMap = groups.reduce((acc, curr) => {
-      // Map database mapped values back (prisma maps enum using the string mappings)
-      acc[curr.category] = curr._count._all;
+      acc[curr.category.toLowerCase()] = curr._count._all;
       return acc;
     }, {} as Record<string, number>);
 
-    return [
-      {
-        id: 'agricultural-waste',
-        name: 'Limbah Pertanian',
-        slug: 'agricultural-waste',
-        _count: { products: countMap['AGRICULTURAL_WASTE'] || countMap['agricultural-waste'] || 0 },
+    return categories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      _count: {
+        products: countMap[cat.slug.toLowerCase()] || 0,
       },
-      {
-        id: 'processed-product',
-        name: 'Produk Olahan',
-        slug: 'processed-product',
-        _count: { products: countMap['PROCESSED_PRODUCT'] || countMap['processed-product'] || 0 },
-      },
-      {
-        id: 'secondhand',
-        name: 'Alat Secondhand',
-        slug: 'secondhand',
-        _count: { products: countMap['SECONDHAND'] || countMap['secondhand'] || 0 },
-      },
-    ];
+    }));
   }
 
   async findOne(id: string) {
-    const nameMap = {
-      'agricultural-waste': 'Limbah Pertanian',
-      'processed-product': 'Produk Olahan',
-      'secondhand': 'Alat Secondhand',
-    };
+    const category = await this.prisma.category.findFirst({
+      where: {
+        OR: [
+          { id },
+          { slug: id },
+        ],
+      },
+    });
 
-    if (id in nameMap) {
-      return {
-        id,
-        name: nameMap[id as keyof typeof nameMap],
-        slug: id,
-      };
+    if (!category) {
+      throw new NotFoundException(`Kategori dengan id/slug "${id}" tidak ditemukan`);
     }
 
-    throw new NotFoundException(`Category with id "${id}" not found`);
+    return {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+    };
   }
 }

@@ -103,7 +103,7 @@ export class CreateContentDto {
     description: 'Cloudinary Secure URL (untuk video)',
   })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   secureUrl?: string;
 
   @ApiPropertyOptional({
@@ -111,7 +111,7 @@ export class CreateContentDto {
     description: 'Cloudinary Video Thumbnail URL (untuk video)',
   })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   thumbnailUrl?: string;
 
   @ApiPropertyOptional({

@@ -47,6 +47,8 @@ model User {
   pointTransactions PointTransaction[]
   learningProgress  LearningProgress[]
   authoredContent   KnowledgeContent[]
+  comments          Comment[]
+  commentReports    CommentReport[]
 }
 
 model UserRole {
@@ -71,9 +73,10 @@ model SellerProfile {
   phone        String?
   logoUrl      String?
   logoPublicId String?
-  status       SellerStatus @default(PENDING)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  status          SellerStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -126,7 +129,7 @@ model Product {
   city          String?
   sellerRating  Float            @default(0.0)
   totalReview   Int              @default(0)
-  category      ProductCategory
+  category      String
   weight        Int              @default(1000)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -295,7 +298,7 @@ model KnowledgeContent {
   title                   String
   slug                    String            @unique
   content                 String
-  category                ContentCategory
+  category                String
   difficulty              ContentDifficulty
   imageUrl                String?
   rewardPoint             Int               @default(20)
@@ -311,6 +314,7 @@ model KnowledgeContent {
 
   author           User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
   learningProgress LearningProgress[]
+  comments         Comment[]
 
   @@index([authorId])
   @@index([status])
@@ -364,4 +368,84 @@ model LearningProgress {
   @@unique([userId, contentId])
   @@index([userId])
   @@index([contentId])
+}
+
+// ─────────────────────────────────────────────
+// Admin & Dynamic Customization Models
+// ─────────────────────────────────────────────
+
+enum CategoryType {
+  MARKETPLACE
+  LEARNING
+}
+
+model Category {
+  id        String       @id @default(uuid())
+  name      String
+  slug      String       @unique
+  type      CategoryType
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  isGlobal  Boolean  @default(true)
+  userId    String?
+  createdAt DateTime @default(now())
+}
+
+model Reward {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  pointsCost  Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum CommentStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+}
+
+model Comment {
+  id          String          @id @default(uuid())
+  contentId   String
+  userId      String
+  parentId    String?
+  content     String
+  status      CommentStatus   @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  knowledgeContent KnowledgeContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent           Comment?         @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies          Comment[]        @relation("CommentReplies")
+  reports          CommentReport[]
+
+  @@index([contentId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([status])
+}
+
+model CommentReport {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
 }

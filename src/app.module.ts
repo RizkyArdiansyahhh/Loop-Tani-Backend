@@ -13,6 +13,8 @@ import { SellerModule } from './module/seller/seller.module';
 import { CloudinaryModule } from './infra/cloudinary/cloudinary.module';
 import { KnowledgeModule } from './module/knowledge/knowledge.module';
 import { PointsModule } from './module/points/points.module';
+import { AdminModule } from './module/admin/admin.module';
+import { CommentModule } from './module/comment/comment.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { PointsModule } from './module/points/points.module';
     SellerModule,
     KnowledgeModule,
     PointsModule,
+    AdminModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

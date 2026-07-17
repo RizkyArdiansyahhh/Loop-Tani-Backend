@@ -105,7 +105,7 @@ export class CategoryController {
     },
   })
   @ApiNotFoundResponse({ description: 'Kategori tidak ditemukan' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(@Param('id') id: string) {
     return this.categoryService.findOne(id);
   }
 }

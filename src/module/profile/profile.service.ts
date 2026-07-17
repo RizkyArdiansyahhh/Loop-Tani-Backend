@@ -151,4 +151,16 @@ export class ProfileService {
         : null,
     };
   }
+
+  async getNotifications(userId: string) {
+    return this.prisma.notification.findMany({
+      where: {
+        OR: [
+          { isGlobal: true },
+          { userId },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }
