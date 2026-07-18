@@ -15,6 +15,7 @@ import { KnowledgeModule } from './module/knowledge/knowledge.module';
 import { PointsModule } from './module/points/points.module';
 import { AdminModule } from './module/admin/admin.module';
 import { CommentModule } from './module/comment/comment.module';
+import { ChatbotModule } from './module/chatbot/chatbot.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CommentModule } from './module/comment/comment.module';
     PointsModule,
     AdminModule,
     CommentModule,
+    ChatbotModule,
   ],
   controllers: [AppController],
   providers: [AppService],
