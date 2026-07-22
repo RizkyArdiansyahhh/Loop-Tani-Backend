@@ -34,7 +34,7 @@ export class ChatbotService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY_CB');
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY is not defined');
     }

@@ -16,6 +16,7 @@ import { PointsModule } from './module/points/points.module';
 import { AdminModule } from './module/admin/admin.module';
 import { CommentModule } from './module/comment/comment.module';
 import { ChatbotModule } from './module/chatbot/chatbot.module';
+import { WasteAnalyzerModule } from './module/waste-analyzer/waste-analyzer.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ChatbotModule } from './module/chatbot/chatbot.module';
     AdminModule,
     CommentModule,
     ChatbotModule,
+    WasteAnalyzerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
