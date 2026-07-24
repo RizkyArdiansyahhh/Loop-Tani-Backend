@@ -323,17 +323,13 @@ export class ProductService {
     const isFavorite = userId
       ? Boolean(product.favorites && product.favorites.length > 0)
       : false;
+
     return {
       id: product.id,
       title: product.title,
       slug: product.slug,
       description: product.description,
       price: product.price,
-      stock: product.stock,
-      condition: product.condition,
-      status: product.status,
-      weight: product.weight,
-      isFeatured: product.isFeatured,
       category: product.category,
       thumbnail: product.images?.[0]?.imageUrl || null,
       images: product.images || [],

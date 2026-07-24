@@ -18,7 +18,21 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
-  app.enableCors({ origin: process.env.FRONTEND_URL, credentials: true });
+  const allowedOrigins = [
+  "https://looptani.id",
+  "https://www.looptani.id",
+];
+
+app.enableCors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+});
 
   // ─── Swagger / OpenAPI ───────────────────────────────────────────────────
   if (process.env.NODE_ENV !== 'production') {
