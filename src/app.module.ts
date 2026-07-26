@@ -17,6 +17,12 @@ import { AdminModule } from './module/admin/admin.module';
 import { CommentModule } from './module/comment/comment.module';
 import { ChatbotModule } from './module/chatbot/chatbot.module';
 import { WasteAnalyzerModule } from './module/waste-analyzer/waste-analyzer.module';
+import { AddressModule } from './module/address/address.module';
+import { RegionModule } from './module/region/region.module';
+import { CheckoutModule } from './module/checkout/checkout.module';
+import { OrderModule } from './module/order/order.module';
+import { PaymentModule } from './module/payment/payment.module';
+import { XenditModule } from './infra/xendit/xendit.module';
 
 @Module({
   imports: [
@@ -27,6 +33,7 @@ import { WasteAnalyzerModule } from './module/waste-analyzer/waste-analyzer.modu
     AuthModule.forRoot({ auth }),
     PrismaModule,
     CloudinaryModule,
+    XenditModule,
     ProductModule,
     CategoryModule,
     CartModule,
@@ -38,6 +45,11 @@ import { WasteAnalyzerModule } from './module/waste-analyzer/waste-analyzer.modu
     CommentModule,
     ChatbotModule,
     WasteAnalyzerModule,
+    AddressModule,
+    RegionModule,
+    CheckoutModule,
+    OrderModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

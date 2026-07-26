@@ -3,6 +3,7 @@ import { PrismaClient, ProductStatus, ProductCondition, ProductCategory } from '
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { auth } from '../src/infra/auth/auth';
+import { seedRegions } from './seeders/region.seed';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: slugify
@@ -235,6 +236,9 @@ async function main() {
 
   console.log('🌱 Starting seed...\n');
 
+  // ── 0. Seed Region Master Data ──────────────────────────────────────────────
+  await seedRegions(prisma as any);
+
   // ── 1. Upsert Seller Users ──────────────────────────────────────────────────
   console.log('👤 Seeding sellers...');
 
@@ -378,59 +382,153 @@ async function main() {
   console.log('\n📚 Seeding knowledge contents...');
   
   const KNOWLEDGE_DATA = [
+    // ── ARTICLES ─────────────────────────────────────────────────────────────
     {
       type: 'ARTICLE' as const,
       title: 'Cara Mengolah Jerami Padi Menjadi Briket Biomassa Bernilai Tinggi',
       slug: 'cara-olah-jerami-briket',
-      content: 'Jerami padi sering kali hanya dibakar setelah masa panen selesai. Padahal, pembakaran jerami menghasilkan polusi udara yang merugikan kesehatan dan lingkungan sekitar. Salah satu solusi terbaik untuk memanfaatkan limbah ini adalah dengan mengolahnya menjadi briket biomassa. Briket dari jerami ini memiliki nilai kalori yang cukup tinggi dan dapat digunakan sebagai bahan bakar alternatif rumah tangga maupun industri kecil.\n\nProses pembuatan briket jerami padi terbilang mudah. Pertama-tama, jerami yang telah dikeringkan harus diarangkan (dikarbonisasi) terlebih dahulu menggunakan drum pembakaran dengan kondisi oksigen minimal. Pengarangan ini bertujuan untuk meningkatkan nilai kalor briket dan meminimalkan asap saat briket digunakan nanti.\n\nSetelah diperoleh arang jerami, haluskan arang tersebut hingga menjadi bubuk kasar. Campurkan bubuk arang jerami dengan perekat alami seperti tepung tapioka (kanji) yang sudah dilarutkan dalam air panas. Perbandingan yang disarankan adalah 90% arang jerami and 10% perekat tapioka. Aduk adonan hingga merata dan terasa liat.\n\nLangkah terakhir adalah pencetakan. Masukkan adonan ke dalam cetakan briket sederhana (bisa menggunakan pipa paralon bekas atau cetakan besi manual) lalu tekan dengan kuat agar padat. Jemur briket basah di bawah sinar matahari selama 2-3 hari hingga benar-benar kering dan keras. Briket jerami padi siap digunakan sebagai bahan bakar ramah lingkungan!',
+      content: 'Jerami padi sering kali hanya dibakar setelah masa panen selesai. Padahal, pembakaran jerami menghasilkan polusi udara yang merugikan kesehatan dan lingkungan sekitar. Salah satu solusi terbaik untuk memanfaatkan limbah ini adalah dengan mengolahnya menjadi briket biomassa. Briket dari jerami ini memiliki nilai kalori yang cukup tinggi dan dapat digunakan sebagai bahan bakar alternatif rumah tangga maupun industri kecil.\n\nProses pembuatan briket jerami padi terbilang mudah. Pertama-tama, jerami yang telah dikeringkan harus diarangkan (dikarbonisasi) terlebih dahulu menggunakan drum pembakaran dengan kondisi oksigen minimal. Pengarangan ini bertujuan untuk meningkatkan nilai kalor briket dan meminimalkan asap saat briket digunakan nanti.\n\nSetelah diperoleh arang jerami, haluskan arang tersebut hingga menjadi bubuk kasar. Campurkan bubuk arang jerami dengan perekat alami seperti tepung tapioka (kanji) yang sudah dilarutkan dalam air panas. Perbandingan yang disarankan adalah 90% arang jerami dan 10% perekat tapioka. Aduk adonan hingga merata dan terasa liat.\n\nLangkah terakhir adalah pencetakan. Masukkan adonan ke dalam cetakan briket sederhana (bisa menggunakan pipa paralon bekas atau cetakan besi manual) lalu tekan dengan kuat agar padat. Jemur briket basah di bawah sinar matahari selama 2-3 hari hingga benar-benar kering dan keras. Briket jerami padi siap digunakan sebagai bahan bakar ramah lingkungan!',
       category: 'OLAHAN' as const,
       difficulty: 'PEMULA' as const,
-      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=800&q=80',
       rewardPoint: 20,
       estimatedReadingMinutes: 5,
       status: 'PUBLISHED' as const,
-      authorId: SELLER_ID
+      authorId: SELLER_ID,
     },
     {
       type: 'ARTICLE' as const,
       title: 'Mengenal Kompos TKKS (Tandan Kosong Kelapa Sawit) & Manfaat Tanah',
       slug: 'mengenal-kompos-tkks',
-      content: 'Tandan Kosong Kelapa Sawit (TKKS) merupakan limbah padat terbesar yang dihasilkan oleh pabrik kelapa sawit. Jika dibiarkan menumpuk, limbah ini dapat menimbulkan bau tidak sedap serta menjadi sarang penyakit bagi tanaman kelapa sawit itu sendiri. Namun, melalui proses pengomposan yang tepat, TKKS dapat diubah menjadi pupuk organik bermutu tinggi yang sangat kaya akan unsur hara kalium.\n\nProses pengomposan TKKS biasanya dikombinasikan dengan limbah cair pabrik kelapa sawit (LCPKS) yang kaya akan nitrogen. Campuran kedua bahan organik ini akan mempercepat proses dekomposi mikroba karena memiliki rasio Karbon (C) dan Nitrogen (N) yang ideal. Bakteri pengurai akan bekerja aktif memecah bahan organik keras dalam TKKS menjadi senyawa tanah yang subur.\n\nManfaat utama penggunaan kompos TKKS adalah untuk memperbaiki struktur fisik tanah, meningkatkan kapasitas menahan air (water holding capacity), serta menyediakan unsur hara makro dan mikro bagi tanaman. Kompos ini sangat cocok diaplikasikan pada tanah berpasir atau lahan marginal yang kekurangan bahan organik aktif.\n\nUntuk menggunakannya, taburkan kompos TKKS secara merata di sekeliling piringan tanaman kelapa sawit atau campurkan ke dalam lubang tanam hortikultura. Dengan memanfaatkan TKKS secara sirkular, biaya pemupukan kimia dapat dipangkas hingga 30%, sekaligus meminimalkan dampak lingkungan negatif pabrik sawit.',
+      content: 'Tandan Kosong Kelapa Sawit (TKKS) merupakan limbah padat terbesar yang dihasilkan oleh pabrik kelapa sawit. Jika dibiarkan menumpuk, limbah ini dapat menimbulkan bau tidak sedap serta menjadi sarang penyakit bagi tanaman kelapa sawit itu sendiri. Namun, melalui proses pengomposan yang tepat, TKKS dapat diubah menjadi pupuk organik bermutu tinggi yang sangat kaya akan unsur hara kalium.\n\nProses pengomposan TKKS biasanya dikombinasikan dengan limbah cair pabrik kelapa sawit (LCPKS) yang kaya akan nitrogen. Campuran kedua bahan organik ini akan mempercepat proses dekomposisi mikroba karena memiliki rasio Karbon (C) dan Nitrogen (N) yang ideal. Bakteri pengurai akan bekerja aktif memecah bahan organik keras dalam TKKS menjadi senyawa tanah yang subur.\n\nManfaat utama penggunaan kompos TKKS adalah untuk memperbaiki struktur fisik tanah, meningkatkan kapasitas menahan air (water holding capacity), serta menyediakan unsur hara makro dan mikro bagi tanaman. Kompos ini sangat cocok diaplikasikan pada tanah berpasir atau lahan marginal yang kekurangan bahan organik aktif.\n\nUntuk menggunakannya, taburkan kompos TKKS secara merata di sekeliling piringan tanaman kelapa sawit atau campurkan ke dalam lubang tanam hortikultura. Dengan memanfaatkan TKKS secara sirkular, biaya pemupukan kimia dapat dipangkas hingga 30%, sekaligus meminimalkan dampak lingkungan negatif pabrik sawit.',
       category: 'LIMBAH' as const,
       difficulty: 'PEMULA' as const,
-      imageUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=800&q=80',
       rewardPoint: 20,
       estimatedReadingMinutes: 4,
       status: 'PUBLISHED' as const,
-      authorId: SELLER_ID
+      authorId: SELLER_ID,
     },
     {
       type: 'ARTICLE' as const,
       title: 'Panduan Perawatan Rutin Mesin Pencacah Rumput Petani Mandiri',
       slug: 'servis-mesin-pencacah-rumput',
-      content: 'Mesin pencacah rumput atau chopper pakan ternak adalah investasi penting bagi peternak berskala menengah ke atas. Alat ini mempermudah proses pembuatan pakan silase maupun pencacahan rumput gajah harian. Namun, karena sering berhadapan dengan bahan berserat tinggi dan getah rumput yang lengket, mesin ini memerlukan perawatan ekstra agar kinerjanya tidak cepat menurun.\n\nSalah satu masalah utama yang sering dialami petani adalah pisau pencacah yang tumpul. Pisau yang tumpul akan membuat putaran mesin terasa berat, boros bahan bakar, dan hasil cacahan menjadi tidak merata. Disarankan untuk memeriksa ketajaman pisau setiap 20 jam penggunaan dan mengasahnya secara berkala menggunakan mesin gerinda tangan.\n\nSelain pisau, kebersihan ruang pencacah juga harus diperhatikan. Setiap kali selesai digunakan, bersihkan sisa-sisa rumput dan getah yang menempel pada dinding dalam mesin. Getah rumput yang mengering dan menumpuk dapat mengeras seperti semen, menyumbat saringan, serta memicu karat pada bagian logam sensitif mesin.\n\nJangan lupa untuk secara rutin memeriksa pelumasan pada bearing poros utama dan rantai transmisi motor penggerak. Gunakan gemuk (grease) tahan panas berkuaitas tinggi setiap bulan sekali. Perawatan sederhana dan disiplin ini dapat memperpanjang umur pakai chopper pakan ternak Anda hingga bertahun-tahun lamanya.',
+      content: 'Mesin pencacah rumput atau chopper pakan ternak adalah investasi penting bagi peternak berskala menengah ke atas. Alat ini mempermudah proses pembuatan pakan silase maupun pencacahan rumput gajah harian. Namun, karena sering berhadapan dengan bahan berserat tinggi dan getah rumput yang lengket, mesin ini memerlukan perawatan ekstra agar kinerjanya tidak cepat menurun.\n\nSalah satu masalah utama yang sering dialami petani adalah pisau pencacah yang tumpul. Pisau yang tumpul akan membuat putaran mesin terasa berat, boros bahan bakar, dan hasil cacahan menjadi tidak merata. Disarankan untuk memeriksa ketajaman pisau setiap 20 jam penggunaan dan mengasahnya secara berkala menggunakan mesin gerinda tangan.\n\nSelain pisau, kebersihan ruang pencacah juga harus diperhatikan. Setiap kali selesai digunakan, bersihkan sisa-sisa rumput dan getah yang menempel pada dinding dalam mesin. Getah rumput yang mengering dan menumpuk dapat mengeras seperti semen, menyumbat saringan, serta memicu karat pada bagian logam sensitif mesin.\n\nJangan lupa untuk secara rutin memeriksa pelumasan pada bearing poros utama dan rantai transmisi motor penggerak. Gunakan gemuk (grease) tahan panas berkualitas tinggi setiap bulan sekali. Perawatan sederhana dan disiplin ini dapat memperpanjang umur pakai chopper pakan ternak Anda hingga bertahun-tahun lamanya.',
       category: 'ALAT' as const,
       difficulty: 'MENENGAH' as const,
-      imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80',
       rewardPoint: 30,
       estimatedReadingMinutes: 6,
       status: 'PUBLISHED' as const,
-      authorId: SELLER_2_ID
+      authorId: SELLER_2_ID,
     },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Rahasia Membuat Pupuk Organik Cair (POC) dari Limbah Sayuran & Buah Busuk',
+      slug: 'pupuk-organik-cair-poc-mol',
+      content: 'Limbah dapur dan sisa sisa buah busuk seringkali berakhir di tempat pembuangan akhir. Padahal, bahan organik lembap ini mengandung nutrisi mikro dan unsur hara makro (N, P, K) yang sangat dibutuhkan oleh tanaman sayuran dan buah hortikultura.\n\nUntuk membuat POC berkualitas, kumpulkan limbah sayuran dan buah (seperti sisa kulit pisang, pepaya, sisa bayam, dan tomat). Masukkan ke dalam drum plastik kedap udara. Tambahkan bioaktivator seperti EM4 Pertanian (atau MOL nasi basi) dan larutan gula merah/molase sebagai sumber makanan mikroba pengurai.\n\nTambahkan air bersih hingga bahan terendam sempurna. Tutup rapat drum dan pasang selang pengeluaran gas yang dicelupkan ke dalam botol berisi air (sistem anaerob). Fermentasikan selama 14-21 hari. Buka drum dan saring cairan POC. Hasil saringan dapat diencerkan dengan perbandingan 1:10 (1 liter POC untuk 10 liter air) sebelum disiramkan ke media tanam tanaman!',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 25,
+      estimatedReadingMinutes: 5,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID,
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Teknik Fermentasi Jerami Padi untuk Pakan Sapi Hemat & Bergizi Tinggi',
+      slug: 'fermentasi-pakan-ternak-jerami',
+      content: 'Jerami padi segar memiliki kadar serat kasar yang sangat tinggi dan daya cerna yang relatif rendah bagi rumen ternak sapi. Tanpa proses pengolahan khusus, sapi membutuhkan energi lebih besar hanya untuk mencerna jerami mentah.\n\nFermentasi jerami padi (proses amoniasi/silase) merupakan metode efisien untuk memutus ikatan lignoselulosa. Potong jerami padi menjadi ukuran 5-10 cm. Semprotkan campuran larutan urea (atau starbio/EM4 ternak) dan tetes tebu secara merata pada hamparan jerami.\n\nPadatkan jerami ke dalam kantong plastik silase tebal atau terpal kedap udara agar proses anaerobik berjalan optimal. Simpan selama 7 hingga 14 hari. Hasil fermentasi jerami ditandai dengan aroma harum manis seperti tape, warna kuning keemasan, dan tekstur jerami yang lebih lunak. Pakan fermentasi ini dapat disimpan hingga 6 bulan dan meningkatkan bobot harian sapi secara signifikan!',
+      category: 'OLAHAN' as const,
+      difficulty: 'MENENGAH' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 35,
+      estimatedReadingMinutes: 7,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_2_ID,
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Manfaat & Cara Membuat Biochar Sekam Padi untuk Memperbaiki Struktur Tanah',
+      slug: 'pembuatan-biochar-sekam-padi',
+      content: 'Biochar atau arang sekam padi adalah pembena tanah (soil conditioner) alami yang terbukti mampu bertahan puluhan tahun di dalam tanah tanpa terdekomposisi cepat. Struktur berpori halus pada biochar berfungsi sebagai rumah bagi mikroba tanah menguntungkan dan penampung air tanah.\n\nPembuatan biochar sekam padi menggunakan teknik pirolisis sederhana (pembakaran dengan kadar oksigen terbatas). Gunakan drum seng bekas yang diberi cerobong asap di tengahnya. Cerobong ini berfungsi menciptakan aliran udara panas bertekanan tinggi yang mengarangkan sekam tanpa membakarnya menjadi abu putih.\n\nSetelah sekam padi berubah menjadi hitam legam sempurna, segera siram dengan air untuk menghentikan proses pembakaran. Biochar siap dicampurkan ke dalam tanah dengan dosis 10-20% dari volume media tanam. Biochar membantu mengikat pupuk kimia agar tidak mudah tercuci hujan serta menetralkan keasaman tanah asam!',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 25,
+      estimatedReadingMinutes: 5,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID,
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Panduan Budidaya Maggot BSF Menggunakan Limbah Organik Rumah Tangga',
+      slug: 'budidaya-maggot-bsf-limbah-dapur',
+      content: 'Lalat Tentara Hitam atau Black Soldier Fly (BSF) merupakan agen pengurai limbah organik yang luar biasa efektif. Larva BSF (maggot) mampu mengonsumsi sampah organik hingga 2 kali berat tubuhnya setiap hari, sekaligus menghasilkan pakan berprotein tinggi untuk unggas dan ikan.\n\nLangkah awal budidaya maggot BSF dimulai dari penyediaan biopond atau wadah penetasan telur. Taruh telur BSF di atas media pakan awal seperti dedak basah atau sisa buah manis. Setelah telur menetas menjadi pakan larva kecil, pindahkan maggot ke wadah pembesaran bersumber sampah dapur masif.\n\nBerikan sampah organik yang sudah dirajang halus setiap pagi dan sore. Dalam kurun waktu 14-18 hari, larva maggot siap dipanen sebelum memasuki fase prepupa hitam. Maggot segar mengandung protein kasar 40% dan lemak 30%, menjadikannya pakan alternatif terbaik pengganti pelet pabrikan yang mahal. Sisa media bekas maggot (kasgot) juga dapat langsung digunakan sebagai pupuk organik kualitas super!',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 30,
+      estimatedReadingMinutes: 6,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_2_ID,
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Tips Memperbaiki & Merawat Sprayer Elektrik Pertanian Agar Awet Bertahun-tahun',
+      slug: 'perawatan-seprotan-hama-electric',
+      content: 'Sprayer elektrik (tangki semprot aki) kini banyak digunakan petani untuk menyemprotkan pestisida, herbisida, maupun pupuk cair. Namun, pompa diafragma dan aki basah/kering pada tangki semprot sangat rentan rusak jika tidak dirawat dengan benar.\n\nKerusakan yang paling sering terjadi adalah tumpukan kristal racun atau bahan kimia yang mengendap di dalam membran pompa. Untuk mencegahnya, selalu bilas tangki semprot dengan air bersih sebanyak 2-3 kali setiap kali selesai digunakan. Semprotkan air bersih keluar nozzle selama 1-2 menit agar saluran pipa dalam pompa bebas dari sisa racun.\n\nSelain itu, perhatikan perawatan aki (battery). Jangan biarkan aki dalam keadaan kosong dalam jangka waktu lama saat musim panceklik. Charge aki minimal 1 bulan sekali meski sprayer sedang tidak digunakan. Simpan sprayer di tempat kering dan teduh terhindar dari paparan terik matahari langsung agar bodi plastik tidak rapuh.',
+      category: 'ALAT' as const,
+      difficulty: 'MENENGAH' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 25,
+      estimatedReadingMinutes: 5,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID,
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Cara Membuat Kompos Super Aerobik Dalam 14 Hari Menggunakan Limbah Daun Kering',
+      slug: 'pembuatan-kompos-aerobik-daun',
+      content: 'Pengomposan metode aerobik (membutuhkan oksigen) merupakan teknik cepat menghasilkan pupuk siap pakai tanpa menimbulkan bau busuk. Bahan utamanya adalah limbah daun kering kebun dan dedaunan hijau sisa pemangkasan pohon.\n\nKunci sukses kompos aerobik terletak pada perbandingan C/N (Karbon dan Nitrogen). Campurkan 3 bagian daun kering cokelat (sumber Karbon) dengan 1 bagian daun hijau atau kotoran ternak (sumber Nitrogen). Tumpuk secara berselang-seling hingga ketinggian minimal 1 meter.\n\nJaga kelembapan tumpukan pada kisaran 50-60% (terasa seperti spons basah yang diperas). Balik tumpukan kompos setiap 3 hari sekali untuk memasukkan udara segar (oksigen) dan meratakan panas pembakaran mikroba. Pada hari ke-14, suhu tumpukan akan menurun, warna kompos menjadi cokelat kehitaman beraroma humus segar, dan kompos siap dipanen!',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 20,
+      estimatedReadingMinutes: 4,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_2_ID,
+    },
+    {
+      type: 'ARTICLE' as const,
+      title: 'Cara Membuat Pestisida Nabati Organik dari Daun Mimba dan Serai Wangi',
+      slug: 'biopestisida-daun-mimba-serai',
+      content: 'Pestisida kimia sintetis jika digunakan secara berlebihan dapat membunuh serangga predator alami dan meninggalkan residu berbahaya pada hasil panen. Pestisida nabati (pesnab) ramah lingkungan dapat dibuat sendiri menggunakan ekstrak tumbuhan sekitar.\n\nDaun mimba mengandung senyawa aktif azadirachtin yang berfungsi sebagai penghambat nafsu makan serangga pengganggu dan penggerek batang. Sementara serai wangi mengandung citronellol yang beraroma pedas menolak kehadiran hama ulat dan walang sangit.\n\nTumbuk halus 1 kg daun mimba dan 500 gram batang serai wangi. Rendam dalam 10 liter air bersih yang dicampur 1 sendok makan sabun cuci piring (sebagai bahan perekat dan perusak lapisan lilin serangga). Biarkan merendam selama 24 jam. Saring cairan pesnab dan semprotkan pada tanaman cabai, padi, atau sayuran di sore hari saat hama mulai aktif!',
+      category: 'OLAHAN' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 20,
+      estimatedReadingMinutes: 5,
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID,
+    },
+
+    // ── VIDEOS ─────────────────────────────────────────────────────────────
     {
       type: 'VIDEO' as const,
       title: 'Langkah Praktis Membuat Briket Berkualitas dari Jerami Padi',
       slug: 'praktik-briket-jerami',
-      content: 'Video ini mendemonstrasikan langkah demi langkah pembuatan briket biomassa dari jerami padi kering. Tonton detail proses pengarangan tanpa oksigen, penghalusan arang, pencampuran kanji, hingga teknik penekanan cetakan briket buatan sendiri.',
+      content: 'Video panduan praktis mendemonstrasikan langkah demi langkah pembuatan briket biomassa dari jerami padi kering. Tonton detail proses pengarangan tanpa oksigen, penghalusan arang, pencampuran kanji, hingga teknik penekanan cetakan briket buatan sendiri.',
       category: 'OLAHAN' as const,
       difficulty: 'PEMULA' as const,
-      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=800&q=80',
       rewardPoint: 30,
       videoDuration: 435,
       secureUrl: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
-      thumbnailUrl: 'https://res.cloudinary.com/demo/video/upload/dog.jpg',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=800&q=80',
       status: 'PUBLISHED' as const,
-      authorId: SELLER_ID
+      authorId: SELLER_ID,
     },
     {
       type: 'VIDEO' as const,
@@ -439,14 +537,59 @@ async function main() {
       content: 'Pelajari rahasia pengomposan cepat limbah padat kelapa sawit (TKKS) menggunakan mikroba aktif. Video ini menunjukkan tata cara tumpukan windrow, penyiraman cairan probiotik, monitoring suhu, serta indikator fisik kompos matang.',
       category: 'LIMBAH' as const,
       difficulty: 'PEMULA' as const,
-      imageUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=800&q=80',
       rewardPoint: 25,
       videoDuration: 342,
       secureUrl: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
-      thumbnailUrl: 'https://res.cloudinary.com/demo/video/upload/dog.jpg',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb19675?auto=format&fit=crop&w=800&q=80',
       status: 'PUBLISHED' as const,
-      authorId: SELLER_2_ID
-    }
+      authorId: SELLER_2_ID,
+    },
+    {
+      type: 'VIDEO' as const,
+      title: 'Tutorial Video: Pembuatan Pupuk Organik Cair (POC) Skala Rumah Tangga',
+      slug: 'tutorial-poc-limbah-buah',
+      content: 'Simak panduan video lengkap meracik pupuk organik cair dari limbah dapur dan kulit buah. Penjelasan mengenai botol fermentasi penampung gas, penggunaan em4, serta takaran dosis penyiraman pada tanaman sayur polybag.',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 30,
+      videoDuration: 512,
+      secureUrl: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=800&q=80',
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID,
+    },
+    {
+      type: 'VIDEO' as const,
+      title: 'Demo Perawatan Mesin Traktor Tangan Quick & Ganti Oli Mesin Diesel',
+      slug: 'demo-perawatan-traktor-tangan',
+      content: 'Video edukasi teknik pemeliharaan traktor tangan bajak sawah. Membahas langkah mudah penggantian oli mesin diesel Kubota, pembersihan karburator/injektor solar, dan penyetelan ketegangan tali v-belt.',
+      category: 'ALAT' as const,
+      difficulty: 'MENENGAH' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 35,
+      videoDuration: 620,
+      secureUrl: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=800&q=80',
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_2_ID,
+    },
+    {
+      type: 'VIDEO' as const,
+      title: 'Panduan Video: Panen & Pengolahan Maggot BSF Sebagai Pakan Unggas',
+      slug: 'video-budidaya-bsf-maggot',
+      content: 'Video dokumentasi memanen larva maggot BSF dari biopond pengolahan sampah organik dapur. Pelajari cara penyaringan larva, pembersihan dari kasgot, serta teknik pengeringan sangrai maggot tahan lama.',
+      category: 'LIMBAH' as const,
+      difficulty: 'PEMULA' as const,
+      imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80',
+      rewardPoint: 30,
+      videoDuration: 410,
+      secureUrl: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80',
+      status: 'PUBLISHED' as const,
+      authorId: SELLER_ID,
+    },
   ];
 
   let knowledgeCount = 0;

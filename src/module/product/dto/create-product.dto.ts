@@ -20,9 +20,10 @@ import { ProductCategory } from '../enums/product-category.enum';
 export class CreateProductImageDto {
   @ApiProperty({
     example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
-    description: 'URL gambar produk (Cloudinary/S3)',
+    description: 'URL atau string Base64 gambar produk',
   })
-  @IsUrl()
+  @IsString()
+  @IsNotEmpty()
   imageUrl: string;
 
   @ApiProperty({
@@ -77,6 +78,25 @@ export class CreateProductDto {
   @IsInt()
   @Min(0)
   stock: number;
+
+  @ApiPropertyOptional({
+    example: 'kg',
+    default: 'kg',
+    description: 'Satuan penjualan (contoh: kg, ton, karung, liter, pcs)',
+  })
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @ApiPropertyOptional({
+    example: 1000,
+    default: 1000,
+    description: 'Berat pengiriman dalam gram',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  weight?: number;
 
   @ApiProperty({
     enum: ProductCondition,

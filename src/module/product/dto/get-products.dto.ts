@@ -125,4 +125,10 @@ export class GetProductsDto {
   @IsOptional()
   @IsString()
   storeSlug?: string;
+
+  @ApiPropertyOptional({ example: false, description: 'Sertakan produk yang stoknya 0 (default: false)' })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  includeOutOfStock?: boolean;
 }

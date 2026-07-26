@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
 
 console.log("cwd:", process.cwd());
 console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
@@ -10,6 +11,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
   });
+
+  app.use(json({ limit: '20mb' }));
+  app.use(urlencoded({ limit: '20mb', extended: true }));
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -21,6 +25,7 @@ async function bootstrap() {
   const allowedOrigins = [
   "https://looptani.id",
   "https://www.looptani.id",
+   "http://localhost:3000",
 ];
 
 app.enableCors({

@@ -31,6 +31,8 @@ export class ProductService {
         description: dto.description,
         price: dto.price,
         stock: dto.stock,
+        unit: dto.unit || 'kg',
+        weight: dto.weight ?? 1000,
         condition: dto.condition,
         status: dto.status,
         isFeatured: dto.isFeatured ?? false,
@@ -55,7 +57,7 @@ export class ProductService {
             name: true,
             image: true,
             sellerProfile: {
-              select: { storeSlug: true },
+              select: { storeName: true, storeSlug: true, logoUrl: true },
             },
           },
         },
@@ -85,11 +87,13 @@ export class ProductService {
       favoriteOnly,
       sellerId,
       storeSlug,
+      includeOutOfStock,
     } = dto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
-      status: 'ACTIVE',
+      ...(!sellerId && !storeSlug && { status: 'ACTIVE' }),
+      ...(!includeOutOfStock && { stock: { gt: 0 } }),
       ...(search && {
         title: { contains: search, mode: 'insensitive' },
       }),
@@ -136,7 +140,7 @@ export class ProductService {
           name: true,
           image: true,
           sellerProfile: {
-            select: { storeSlug: true },
+            select: { storeName: true, storeSlug: true, logoUrl: true },
           },
         },
       },
@@ -147,7 +151,7 @@ export class ProductService {
       include.favorites = { where: { userId } };
     }
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
         skip,
@@ -182,7 +186,7 @@ export class ProductService {
           name: true,
           image: true,
           sellerProfile: {
-            select: { storeSlug: true },
+            select: { storeName: true, storeSlug: true, logoUrl: true },
           },
         },
       },
@@ -228,6 +232,8 @@ export class ProductService {
         ...(dto.description && { description: dto.description }),
         ...(dto.price !== undefined && { price: dto.price }),
         ...(dto.stock !== undefined && { stock: dto.stock }),
+        ...(dto.unit !== undefined && { unit: dto.unit }),
+        ...(dto.weight !== undefined && { weight: dto.weight }),
         ...(dto.condition && { condition: dto.condition }),
         ...(dto.status && { status: dto.status }),
         ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
@@ -248,7 +254,16 @@ export class ProductService {
       },
       include: {
         images: { orderBy: { order: 'asc' } },
-        seller: { select: { id: true, name: true, image: true } },
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            sellerProfile: {
+              select: { storeName: true, storeSlug: true, logoUrl: true },
+            },
+          },
+        },
         _count: { select: { favorites: true } },
       },
     });
@@ -330,13 +345,19 @@ export class ProductService {
       slug: product.slug,
       description: product.description,
       price: product.price,
+      stock: product.stock ?? 0,
+      unit: product.unit || 'kg',
+      weight: product.weight || 1000,
+      condition: product.condition,
+      isFeatured: product.isFeatured ?? false,
       category: product.category,
       thumbnail: product.images?.[0]?.imageUrl || null,
       images: product.images || [],
       seller: {
         id: product.seller.id,
-        name: product.seller.name,
-        image: product.seller.image,
+        name: product.seller.sellerProfile?.storeName || product.seller.name,
+        storeName: product.seller.sellerProfile?.storeName || product.seller.name,
+        image: product.seller.sellerProfile?.logoUrl || product.seller.image,
         storeSlug: product.seller.sellerProfile?.storeSlug || null,
       },
       sellerRating: product.sellerRating,

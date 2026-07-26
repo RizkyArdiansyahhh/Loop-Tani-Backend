@@ -26,7 +26,7 @@ export class PointsService {
     const { page, limit } = dto;
     const skip = (page - 1) * limit;
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.pointTransaction.findMany({
         where: { userId },
         skip,

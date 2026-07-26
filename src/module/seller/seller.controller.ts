@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   HttpCode,
   HttpStatus,
@@ -21,6 +22,7 @@ import { Session, AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import { SellerService } from './seller.service';
 import { RegisterSellerDto } from './dto/register-seller.dto';
+import { UpdateSellerDto } from './dto/update-seller.dto';
 import { SimulateApproveDto } from './dto/simulate-approve.dto';
 
 @ApiTags('Seller')
@@ -39,6 +41,20 @@ export class SellerController {
   @ApiUnauthorizedResponse({ description: 'Not authenticated' })
   getSellerMe(@Session() session: UserSession) {
     return this.sellerService.getSellerMe(session.user.id);
+  }
+
+  @Patch('settings')
+  @ApiOperation({
+    summary: 'Update seller store profile settings',
+    description: 'Update store name, slug, phone, location, logo, or description for the logged-in seller.',
+  })
+  @ApiResponse({ status: 200, description: 'Seller profile updated successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  updateSellerSettings(
+    @Session() session: UserSession,
+    @Body() dto: UpdateSellerDto,
+  ) {
+    return this.sellerService.updateSellerSettings(session.user.id, dto);
   }
 
   @Post('register')

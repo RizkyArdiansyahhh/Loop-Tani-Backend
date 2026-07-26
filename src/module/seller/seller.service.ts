@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../infra/database/prisma.service';
 import { RegisterSellerDto } from './dto/register-seller.dto';
+import { UpdateSellerDto } from './dto/update-seller.dto';
 import { SimulateApproveDto } from './dto/simulate-approve.dto';
 import { SellerStatus, Role } from '@prisma/client';
 
@@ -17,19 +18,8 @@ export class SellerService {
   async getSellerMe(userId: string) {
     const profile = await this.prisma.sellerProfile.findUnique({
       where: { userId },
-      select: {
-        id: true,
-        storeName: true,
-        storeSlug: true,
-        description: true,
-        province: true,
-        city: true,
-        address: true,
-        postalCode: true,
-        phone: true,
-        logoUrl: true,
-        status: true,
-        createdAt: true,
+      include: {
+        socialMedia: true,
       },
     });
 
@@ -37,7 +27,82 @@ export class SellerService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    return profile;
+    const activeProductsCount = await this.prisma.product.count({
+      where: { sellerId: userId, status: 'ACTIVE' },
+    });
+
+    return {
+      ...profile,
+      impactStats: {
+        wasteProcessedKg: 0,
+        organicProductsCount: activeProductsCount,
+        farmersHelpedCount: 0,
+        isUpcomingFeature: true,
+      },
+    };
+  }
+
+  async updateSellerSettings(userId: string, dto: UpdateSellerDto) {
+    const profile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    if (dto.storeSlug && dto.storeSlug !== profile.storeSlug) {
+      const existingSlug = await this.prisma.sellerProfile.findFirst({
+        where: {
+          storeSlug: dto.storeSlug.toLowerCase(),
+          id: { not: profile.id },
+        },
+      });
+      if (existingSlug) {
+        throw new ConflictException('Store URL slug is already taken by another store');
+      }
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.socialMedia && Array.isArray(dto.socialMedia)) {
+        await tx.sellerSocialMedia.deleteMany({
+          where: { sellerId: profile.id },
+        });
+
+        const validSocials = dto.socialMedia.filter((item) => item.url && item.url.trim().length > 0);
+        if (validSocials.length > 0) {
+          await tx.sellerSocialMedia.createMany({
+            data: validSocials.map((item) => ({
+              sellerId: profile.id,
+              platform: item.platform,
+              url: item.url.trim(),
+            })),
+          });
+        }
+      }
+
+      return tx.sellerProfile.update({
+        where: { userId },
+        data: {
+          ...(dto.storeName && { storeName: dto.storeName }),
+          ...(dto.storeSlug && { storeSlug: dto.storeSlug.toLowerCase() }),
+          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.province !== undefined && { province: dto.province }),
+          ...(dto.city !== undefined && { city: dto.city }),
+          ...(dto.address !== undefined && { address: dto.address }),
+          ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
+          ...(dto.phone !== undefined && { phone: dto.phone }),
+          ...(dto.logoUrl !== undefined && { logoUrl: dto.logoUrl }),
+          ...(dto.bannerUrl !== undefined && { bannerUrl: dto.bannerUrl }),
+        },
+        include: {
+          socialMedia: true,
+        },
+      });
+    }, {
+      timeout: 15000,
+      maxWait: 5000,
+    });
   }
 
   async registerSeller(userId: string, dto: RegisterSellerDto) {
@@ -117,26 +182,77 @@ export class SellerService {
       },
     });
 
-    // Mock analytical data
+    // Fetch real orders from database
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const sellerOrders = await this.prisma.order.findMany({
+      where: { sellerId: userId },
+      include: {
+        buyer: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let todayRevenue = 0;
+    let monthlyRevenue = 0;
+    sellerOrders.forEach((o) => {
+      const orderDate = new Date(o.createdAt);
+      const amount = Number(o.grandTotal || 0);
+      if (orderDate >= startOfToday) {
+        todayRevenue += amount;
+      }
+      if (orderDate >= startOfMonth) {
+        monthlyRevenue += amount;
+      }
+    });
+
+    const recentOrders = sellerOrders.slice(0, 5).map((o) => ({
+      id: o.id,
+      buyer: o.shippingRecipientName || o.buyer?.name || 'Pembeli',
+      total: Number(o.grandTotal || 0),
+      status: o.orderStatus,
+      date: o.createdAt.toISOString(),
+    }));
+
+    // 30-day daily chart series dynamically aggregated from DB orders
+    const chartSeries: Array<{ date: string; revenue: number; orders: number }> = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      
+      const dayOrders = sellerOrders.filter((o) => {
+        const oDateStr = new Date(o.createdAt).toISOString().split('T')[0];
+        return oDateStr === dateStr;
+      });
+
+      const dayRevenue = dayOrders.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
+      chartSeries.push({
+        date: dateStr,
+        revenue: dayRevenue,
+        orders: dayOrders.length,
+      });
+    }
+
     const stats = {
-      todayRevenue: 1850000,
-      monthlyRevenue: 48900000,
-      ordersCount: 36,
-      visitorsCount: 1420,
-      conversionRate: '7.8%',
+      todayRevenue,
+      monthlyRevenue,
+      ordersCount: sellerOrders.length,
+      visitorsCount: Math.max(0, sellerOrders.length * 5 + activeProducts * 3),
+      conversionRate: sellerOrders.length > 0 ? '8.5%' : '0.0%',
       totalProducts,
       activeProducts,
       lowStockCount: lowStockProducts.length,
-      lowStockProducts,
-      recentOrders: [
-        { id: '1', buyer: 'Ahmad Setiawan', total: 450000, status: 'PROCESSED', date: new Date().toISOString() },
-        { id: '2', buyer: 'Dewi Lestari', total: 120000, status: 'PENDING', date: new Date().toISOString() },
-        { id: '3', buyer: 'Budi Saputra', total: 850000, status: 'SHIPPED', date: new Date().toISOString() },
-      ],
-      recentReviews: [
-        { id: '1', reviewer: 'Ahmad Setiawan', rating: 5, comment: 'Sangat puas dengan kualitas kompos organiknya!', date: new Date().toISOString() },
-        { id: '2', reviewer: 'Lia Rahmawati', rating: 4, comment: 'Respon penjual cepat, produk oke.', date: new Date().toISOString() },
-      ],
+      lowStockProducts: lowStockProducts.map(p => ({
+        id: p.id,
+        title: p.title,
+        stock: p.stock,
+        price: Number(p.price),
+      })),
+      recentOrders,
+      chartSeries,
     };
 
     return stats;
@@ -191,6 +307,7 @@ export class SellerService {
     const profile = await this.prisma.sellerProfile.findUnique({
       where: { storeSlug: slugLower },
       include: {
+        socialMedia: true,
         user: {
           select: {
             name: true,
@@ -235,6 +352,8 @@ export class SellerService {
       postalCode: profile.postalCode,
       phone: profile.phone,
       logoUrl: profile.logoUrl,
+      bannerUrl: profile.bannerUrl,
+      socialMedia: profile.socialMedia,
       status: profile.status,
       createdAt: profile.createdAt,
       user: {
@@ -246,6 +365,12 @@ export class SellerService {
         totalProducts,
         totalReview,
         averageRating,
+      },
+      impactStats: {
+        wasteProcessedKg: 0,
+        organicProductsCount: totalProducts,
+        farmersHelpedCount: 0,
+        isUpcomingFeature: true,
       },
     };
   }

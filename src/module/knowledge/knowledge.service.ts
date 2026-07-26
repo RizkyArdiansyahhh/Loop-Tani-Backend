@@ -118,7 +118,7 @@ export class KnowledgeService {
       }),
     };
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.knowledgeContent.findMany({
         where,
         skip,

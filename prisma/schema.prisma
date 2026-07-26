@@ -50,6 +50,9 @@ model User {
   comments          Comment[]
   commentReports    CommentReport[]
   chatConversations ChatConversation[]
+  addresses         Address[]
+  buyerOrders       Order[]             @relation("BuyerOrders")
+  sellerOrders      Order[]             @relation("SellerOrders")
 }
 
 model UserRole {
@@ -62,27 +65,57 @@ model UserRole {
 }
 
 model SellerProfile {
-  id           String       @id @default(uuid())
-  userId       String       @unique
-  storeName    String
-  storeSlug    String       @unique
-  description  String?
-  province     String?
-  city         String?
-  address      String?
-  postalCode   String?
-  phone        String?
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  storeName   String
+  storeSlug   String   @unique
+  description String?
+
+  province    String?
+  city        String?
+  address     String?
+  postalCode  String?
+  phone       String?
+
   logoUrl      String?
   logoPublicId String?
-  status          SellerStatus @default(PENDING)
-  rejectionReason String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  bannerUrl    String?
+
+  status           SellerStatus @default(PENDING)
+  rejectionReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  socialMedia SellerSocialMedia[]
+
   @@index([storeSlug])
   @@index([status])
+}
+
+model SellerSocialMedia {
+  id        String @id @default(uuid())
+  sellerId  String
+
+  platform  SocialPlatform
+  url       String
+
+  seller SellerProfile @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, platform])
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+  FACEBOOK
+  X
+  WHATSAPP
+  WEBSITE
+  TELEGRAM
 }
 
 // ─────────────────────────────────────────────
@@ -131,6 +164,7 @@ model Product {
   sellerRating  Float            @default(0.0)
   totalReview   Int              @default(0)
   category      String
+  unit          String           @default("kg")
   weight        Int              @default(1000)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -485,3 +519,247 @@ model ChatMessage {
   @@index([conversationId])
 }
 
+enum AddressType {
+  HOME
+  OFFICE
+  OTHER
+}
+
+model Address {
+  id                  String      @id @default(uuid())
+  userId              String
+  type                AddressType
+  label               String?     // Contoh: Rumah Utama, Kantor Cabang
+
+  recipientName       String
+  recipientPhone      String      // Tipe data string (normalisasi 62)
+
+  provinceId          String
+  provinceName        String
+  cityId              String
+  cityName            String
+  districtId          String
+  districtName        String
+  subDistrictId       String
+  subDistrictName     String
+  postalCode          String
+
+  street              String
+  notes               String?     // Catatan kurir (contoh: pagar hitam)
+
+  latitude            Decimal?    // Decimal untuk akurasi peta
+  longitude           Decimal?    // Decimal untuk akurasi peta
+
+  placeId             String?     // ID Google Maps Place jika dibutuhkan
+
+  isDefault           Boolean     @default(false)
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  deletedAt           DateTime?   // Untuk Soft Delete
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@index([userId, deletedAt]) // Optimalisasi pencarian alamat aktif user
+}
+
+// ─────────────────────────────────────────────
+// Region Master Data Models
+// ─────────────────────────────────────────────
+
+model Province {
+  id        String    @id
+  name      String
+  regencies Regency[]
+
+  @@index([name])
+}
+
+model Regency {
+  id         String     @id
+  provinceId String
+  name       String
+  province   Province   @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+  districts  District[]
+
+  @@index([provinceId])
+  @@index([name])
+}
+
+model District {
+  id        String    @id
+  regencyId String
+  name      String
+  regency   Regency   @relation(fields: [regencyId], references: [id], onDelete: Cascade)
+  villages  Village[]
+
+  @@index([regencyId])
+  @@index([name])
+}
+
+model Village {
+  id         String   @id
+  districtId String
+  name       String
+  district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@index([districtId])
+  @@index([name])
+}
+
+// ─────────────────────────────────────────────
+// Order & Order Item Models
+// ─────────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique
+  buyerId     String
+  sellerId    String
+  
+  // Snapshot Seller
+  sellerStoreName String
+  sellerStoreSlug String
+  sellerLogo      String?
+
+  // Snapshot Alamat Pengiriman (Prefixed & Region IDs + Names)
+  shippingRecipientName   String
+  shippingRecipientPhone  String
+  shippingProvinceId      String
+  shippingProvinceName    String
+  shippingCityId          String
+  shippingCityName        String
+  shippingDistrictId      String
+  shippingDistrictName    String
+  shippingSubDistrictId   String
+  shippingSubDistrictName String
+  shippingPostalCode      String
+  shippingStreet          String
+  shippingNotes           String?
+
+  // Snapshot Pricing (Decimal) & Weight
+  subtotal       Decimal   @db.Decimal(15, 2)
+  shippingCost   Decimal   @default(0) @db.Decimal(15, 2)
+  serviceFee     Decimal   @default(0) @db.Decimal(15, 2)
+  discount       Decimal   @default(0) @db.Decimal(15, 2)
+  insuranceFee   Decimal   @default(0) @db.Decimal(15, 2)
+  applicationFee Decimal   @default(0) @db.Decimal(15, 2)
+  grandTotal     Decimal   @db.Decimal(15, 2)
+  totalWeight    Int       @default(0)
+
+  // Status & Expiration
+  orderStatus OrderStatus @default(PENDING_PAYMENT)
+  expiredAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyer   User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller  User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  items   OrderItem[]
+  payment Payment?
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([orderStatus])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  orderId      String
+  productId    String
+  productName  String
+  productSlug  String
+  thumbnailUrl String?
+  productPrice Decimal  @db.Decimal(15, 2)
+  weight       Int      @default(0)
+  quantity     Int
+  subtotal     Decimal  @db.Decimal(15, 2)
+  categoryId   String?
+  categoryName String?
+  unit         String?  @default("unit")
+  createdAt    DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ─────────────────────────────────────────────
+// Payment Models
+// ─────────────────────────────────────────────
+
+enum PaymentProvider {
+  XENDIT
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+model Payment {
+  id               String          @id @default(uuid())
+  orderId          String          @unique
+  provider         PaymentProvider @default(XENDIT)
+  amount           Decimal         @db.Decimal(15, 2)
+  status           PaymentStatus   @default(PENDING)
+
+  // ── Identifier Fields ──────────────────────────────────────────────
+  // referenceId      → Internal unique reference yang dihasilkan oleh sistem Loop Tani
+  //                    dengan format: PAY-YYYYMMDD-XXXXXX (misal: PAY-20260724-AB12CD).
+  //                    Dikirim ke Xendit sebagai `reference_id` pada Payments API v3.
+  // paymentRequestId → ID payment request yang dikembalikan oleh provider (Xendit Payment Request ID).
+  //                    Diisi setelah berhasil membuat payment request ke Xendit.
+  // paymentId        → ID pembayaran aktual dari provider. Diisi saat callback webhook
+  //                    diterima dan status pembayaran berubah menjadi SUCCEEDED.
+  referenceId      String          @unique
+  paymentRequestId String?         @unique
+  paymentId        String?         @unique
+
+  // ── Payment Channel ────────────────────────────────────────────────
+  // paymentMethod dan providerCode HANYA diisi dari webhook callback.
+  // Jangan pernah percaya value dari frontend.
+  // Contoh: paymentMethod = "VIRTUAL_ACCOUNT", providerCode = "BCA"
+  paymentMethod    String?         // QRIS, VIRTUAL_ACCOUNT, EWALLET, CREDIT_CARD, dll.
+  providerCode     String?         // BCA, BNI, MANDIRI, OVO, DANA, SHOPEEPAY, dll.
+
+  expiredAt         DateTime?
+  paidAt            DateTime?
+  failureReason     String?        // Alasan kegagalan: "Expired", "Card declined", "Fraud detected", dll.
+  webhookReceivedAt DateTime?      // Timestamp saat webhook callback diterima. Berguna untuk audit.
+
+  // Menyimpan seluruh response dari Xendit.
+  // IMMUTABLE: jangan pernah di-update sebagian (merge).
+  // Selalu overwrite dengan payload terakhir yang diterima dari provider.
+  rawResponse      Json?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@index([referenceId])
+  @@index([paymentRequestId])
+  @@index([provider, status])
+}

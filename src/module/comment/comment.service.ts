@@ -101,7 +101,7 @@ export class CommentService {
       ...statusFilter,
     };
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.comment.findMany({
         where,
         skip,
