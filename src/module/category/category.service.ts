@@ -23,7 +23,12 @@ export class CategoryService {
     });
 
     const countMap = groups.reduce((acc, curr) => {
-      acc[curr.category.toLowerCase()] = curr._count._all;
+      if (curr.category) {
+        const raw = curr.category.toLowerCase();
+        const hyphenated = raw.replace(/_/g, '-');
+        acc[raw] = curr._count._all;
+        acc[hyphenated] = curr._count._all;
+      }
       return acc;
     }, {} as Record<string, number>);
 

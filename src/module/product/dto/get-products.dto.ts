@@ -60,6 +60,15 @@ export class GetProductsDto {
     description: 'Filter berdasarkan kategori produk',
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const upper = value.toUpperCase().replace(/-/g, '_');
+      if (upper in ProductCategory) {
+        return upper;
+      }
+    }
+    return value;
+  })
   @IsEnum(ProductCategory)
   category?: ProductCategory;
 

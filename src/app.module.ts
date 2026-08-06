@@ -23,6 +23,7 @@ import { CheckoutModule } from './module/checkout/checkout.module';
 import { OrderModule } from './module/order/order.module';
 import { PaymentModule } from './module/payment/payment.module';
 import { XenditModule } from './infra/xendit/xendit.module';
+import { ShippingModule } from './module/shipping/shipping.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { XenditModule } from './infra/xendit/xendit.module';
     CheckoutModule,
     OrderModule,
     PaymentModule,
+    ShippingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
