@@ -14,6 +14,17 @@ module.exports = function (options, webpack) {
       nodeExternals({
         allowlist: [
           /better-auth/,
+          /better-call/,
+          /rou3/,
+          /radix3/,
+          /defu/,
+          /destr/,
+          /ofetch/,
+          /ufo/,
+          /uncrypto/,
+          /unenv/,
+          /jose/,
+          /kysely/,
         ],
       }),
     ],
