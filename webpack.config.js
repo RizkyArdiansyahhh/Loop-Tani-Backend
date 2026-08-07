@@ -12,7 +12,6 @@ module.exports = function (options, webpack) {
     },
     externals: [
       nodeExternals({
-        // Bundle all ESM dependencies into api/index.js EXCEPT Prisma Client and pg
         allowlist: [
           /^(?!@prisma\/client|@prisma\/adapter-pg|pg).*/,
         ],
