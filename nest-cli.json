@@ -4,7 +4,8 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "builder": "webpack"
+    "builder": "webpack",
+    "webpackConfigPath": "webpack.config.js"
   },
   "generateOptions": {
     "baseDir": "module"
