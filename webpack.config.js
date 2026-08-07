@@ -12,19 +12,9 @@ module.exports = function (options, webpack) {
     },
     externals: [
       nodeExternals({
+        // Bundle ALL dependencies into dist/main.js EXCEPT Prisma and database drivers
         allowlist: [
-          /better-auth/,
-          /better-call/,
-          /rou3/,
-          /radix3/,
-          /defu/,
-          /destr/,
-          /ofetch/,
-          /ufo/,
-          /uncrypto/,
-          /unenv/,
-          /jose/,
-          /kysely/,
+          /^(?!@prisma\/client|@prisma\/adapter-pg|pg).*/,
         ],
       }),
     ],
