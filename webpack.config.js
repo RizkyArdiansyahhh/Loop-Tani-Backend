@@ -13,8 +13,7 @@ module.exports = function (options, webpack) {
     externals: [
       nodeExternals({
         allowlist: [
-          /^@thallesp\/nestjs-better-auth/,
-          /^better-auth/,
+          /better-auth/,
         ],
       }),
     ],
@@ -27,6 +26,7 @@ module.exports = function (options, webpack) {
             '@nestjs/websockets',
             '@apollo/server',
             'fastify',
+            '@opentelemetry/api',
           ];
           if (!optionalImports.includes(resource)) {
             return false;
