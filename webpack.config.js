@@ -19,6 +19,9 @@ module.exports = function (options, webpack) {
     ],
     plugins: [
       ...(options.plugins || []),
+      new webpack.optimize.LimitChunkCountPlugin({
+        maxChunks: 1,
+      }),
       new webpack.IgnorePlugin({
         checkResource(resource) {
           const optionalImports = [
