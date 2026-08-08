@@ -1,56 +1,47 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import express, { Express } from 'express';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import express from 'express';
+import { ValidationPipe } from '@nestjs/common';
 
-const server = express();
-let cachedServer: any;
+let cachedServer: Express;
 
-export async function createNestApp(expressInstance: express.Express) {
+async function bootstrapServer(): Promise<Express> {
   if (!cachedServer) {
+    const expressApp = express();
     const app = await NestFactory.create(
       AppModule,
-      new ExpressAdapter(expressInstance),
-      { bodyParser: false }
+      new ExpressAdapter(expressApp),
+      { logger: ['error', 'warn', 'log'] },
     );
 
-    app.use(express.json({ limit: '20mb' }));
-    app.use(express.urlencoded({ limit: '20mb', extended: true }));
+    app.setGlobalPrefix('api/v1');
+    app.enableCors({
+      origin: [
+        'https://looptani.id',
+        'https://www.looptani.id',
+        'http://localhost:3000',
+      ],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    });
 
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
         transform: true,
+        forbidNonWhitelisted: true,
       }),
     );
 
-    app.setGlobalPrefix('api/v1');
-
-    const allowedOrigins = [
-      'https://looptani.id',
-      'https://www.looptani.id',
-      'http://localhost:3000',
-    ];
-
-    app.enableCors({
-      origin(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-      credentials: true,
-    });
-
     await app.init();
-    cachedServer = expressInstance;
+    cachedServer = expressApp;
   }
   return cachedServer;
 }
 
 export default async function handler(req: any, res: any) {
-  const expressApp = await createNestApp(server);
-  return expressApp(req, res);
+  const server = await bootstrapServer();
+  return server(req, res);
 }
