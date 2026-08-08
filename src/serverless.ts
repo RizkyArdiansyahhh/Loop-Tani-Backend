@@ -9,6 +9,10 @@ let cachedServer: Express;
 async function bootstrapServer(): Promise<Express> {
   if (!cachedServer) {
     const expressApp = express();
+    // Force Express router initialization so expressApp._router exists.
+    // This prevents NestJS ExpressAdapter from falling back to accessing deprecated app.router.
+    expressApp.use('/_health_check', (_req, res) => res.send('OK'));
+
     const app = await NestFactory.create(
       AppModule,
       new ExpressAdapter(expressApp),

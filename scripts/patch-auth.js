@@ -9,7 +9,7 @@ try {
   const pkgJsonPath = path.join(pkgDir, 'package.json');
 
   if (fs.existsSync(mjsPath)) {
-    execSync(`npx -y esbuild "${mjsPath}" --outfile="${cjsPath}" --format=cjs --platform=node`, {
+    execSync(`npx -y esbuild "${mjsPath}" --outfile="${cjsPath}" --format=cjs --platform=node --bundle "--external:@nestjs/*" "--external:rxjs" "--external:@prisma/*" "--external:pg"`, {
       stdio: 'inherit',
     });
 

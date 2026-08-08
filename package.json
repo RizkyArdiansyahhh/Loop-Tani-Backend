@@ -5,9 +5,6 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "overrides": {
-    "express": "4.21.2"
-  },
   "scripts": {
     "postinstall": "prisma generate && node scripts/patch-auth.js",
     "build": "prisma generate && node scripts/patch-auth.js && nest build",
@@ -47,7 +44,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cloudinary": "^2.10.0",
-    "express": "4.21.2",
+    "express": "^5.2.1",
     "multer": "^2.2.0",
     "pg": "^8.22.0",
     "prisma": "^7.8.0",
