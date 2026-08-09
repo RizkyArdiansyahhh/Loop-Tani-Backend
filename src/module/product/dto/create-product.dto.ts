@@ -108,13 +108,13 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     enum: ProductStatus,
-    example: ProductStatus.DRAFT,
-    default: ProductStatus.DRAFT,
-    description: 'Status produk. Default DRAFT. Set ke ACTIVE agar tampil di marketplace.',
+    example: ProductStatus.ACTIVE,
+    default: ProductStatus.ACTIVE,
+    description: 'Status produk. Default ACTIVE agar langsung tayang di marketplace.',
   })
   @IsOptional()
   @IsEnum(ProductStatus)
-  status?: ProductStatus = ProductStatus.DRAFT;
+  status?: ProductStatus = ProductStatus.ACTIVE;
 
   @ApiPropertyOptional({
     example: false,

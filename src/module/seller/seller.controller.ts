@@ -4,6 +4,7 @@ import {
   Post,
   Patch,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
   Param,
@@ -111,5 +112,111 @@ export class SellerController {
   @ApiNotFoundResponse({ description: 'Store not found or not active' })
   getStoreBySlug(@Param('slug') slug: string) {
     return this.sellerService.getStoreBySlug(slug);
+  }
+
+  @Get('orders')
+  @ApiOperation({
+    summary: 'Get seller orders with filters & pagination',
+    description: 'Fetch list of orders for the active seller store.',
+  })
+  @ApiResponse({ status: 200, description: 'Seller orders retrieved successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  getOrders(
+    @Session() session: UserSession,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.sellerService.getSellerOrders(session.user.id, {
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10,
+      status,
+      search,
+    });
+  }
+
+  @Patch('orders/:id/status')
+  @ApiOperation({
+    summary: 'Update seller order status',
+    description: 'Update the status of an order (e.g. PROCESSING, SHIPPED, COMPLETED).',
+  })
+  @ApiResponse({ status: 200, description: 'Order status updated successfully' })
+  @ApiNotFoundResponse({ description: 'Order not found' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  updateOrderStatus(
+    @Session() session: UserSession,
+    @Param('id') id: string,
+    @Body() dto: { status: any },
+  ) {
+    return this.sellerService.updateSellerOrderStatus(session.user.id, id, dto);
+  }
+
+  @Get('revenue')
+  @ApiOperation({
+    summary: 'Get seller revenue & financial statistics',
+    description: 'Fetches revenue balances, payout history, and transaction entries for active seller.',
+  })
+  @ApiResponse({ status: 200, description: 'Seller revenue data retrieved successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  getRevenue(@Session() session: UserSession) {
+    return this.sellerService.getSellerRevenue(session.user.id);
+  }
+
+  @Post('revenue/withdraw')
+  @ApiOperation({
+    summary: 'Request balance withdrawal payout',
+    description: 'Submit payout request for available balance.',
+  })
+  @ApiResponse({ status: 200, description: 'Payout requested successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  requestPayout(
+    @Session() session: UserSession,
+    @Body() dto: { amount: number; bankName?: string; accountNumber?: string },
+  ) {
+    return this.sellerService.requestPayout(session.user.id, dto);
+  }
+
+  @Get('analytics')
+  @ApiOperation({
+    summary: 'Get seller business analytics & metrics',
+    description: 'Fetches store performance metrics, top-selling products, and traffic conversions.',
+  })
+  @ApiResponse({ status: 200, description: 'Seller analytics retrieved successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  getAnalytics(
+    @Session() session: UserSession,
+    @Query('period') period?: string,
+  ) {
+    return this.sellerService.getSellerAnalytics(session.user.id, period);
+  }
+
+  @Get('reviews')
+  @ApiOperation({
+    summary: 'Get seller reviews and rating breakdown',
+    description: 'Fetches buyer reviews and satisfaction rating metrics for active seller store.',
+  })
+  @ApiResponse({ status: 200, description: 'Seller reviews retrieved successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  getReviews(
+    @Session() session: UserSession,
+    @Query('rating') rating?: number,
+  ) {
+    return this.sellerService.getSellerReviews(session.user.id, rating ? Number(rating) : undefined);
+  }
+
+  @Post('reviews/:id/reply')
+  @ApiOperation({
+    summary: 'Reply to buyer review',
+    description: 'Post a response from seller to a specific buyer review.',
+  })
+  @ApiResponse({ status: 200, description: 'Review reply posted successfully' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  replyReview(
+    @Session() session: UserSession,
+    @Param('id') id: string,
+    @Body() dto: { reply: string },
+  ) {
+    return this.sellerService.replySellerReview(session.user.id, id, dto);
   }
 }
