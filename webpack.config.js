@@ -1,5 +1,4 @@
 const path = require('path');
-const nodeExternals = require('webpack-node-externals');
 
 module.exports = function (options, webpack) {
   return {
@@ -10,13 +9,7 @@ module.exports = function (options, webpack) {
       filename: 'index.js',
       libraryTarget: 'commonjs',
     },
-    externals: [
-      nodeExternals({
-        allowlist: [
-          /^(?!@prisma\/client|@prisma\/adapter-pg|pg).*/,
-        ],
-      }),
-    ],
+    externals: [],
     plugins: [
       ...(options.plugins || []),
       new webpack.optimize.LimitChunkCountPlugin({
