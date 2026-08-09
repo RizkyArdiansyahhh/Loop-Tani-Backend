@@ -100,4 +100,15 @@ export class ProfileController {
   ) {
     return this.profileService.uploadAvatar(session.user.id, file);
   }
+
+  @Get('notifications')
+  @ApiOperation({
+    summary: 'Get user notifications',
+    description: 'Retrieves user notifications and global announcements.',
+  })
+  @ApiResponse({ status: 200, description: 'List of notifications' })
+  @ApiUnauthorizedResponse({ description: 'Not authenticated' })
+  getNotifications(@Session() session: UserSession) {
+    return this.profileService.getNotifications(session.user.id);
+  }
 }
