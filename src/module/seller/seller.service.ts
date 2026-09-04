@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../infra/database/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import { RegisterSellerDto } from './dto/register-seller.dto';
 import { UpdateSellerDto } from './dto/update-seller.dto';
 import { SimulateApproveDto } from './dto/simulate-approve.dto';
@@ -13,7 +14,10 @@ import { SellerStatus, Role, OrderStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class SellerService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getSellerMe(userId: string) {
     const profile = await this.prisma.sellerProfile.findUnique({
@@ -292,12 +296,15 @@ export class SellerService {
   }
 
   async simulateApprove(userId: string, dto: SimulateApproveDto) {
-    // 1. Verify Demo Mode
-    const isDemo = process.env.ENABLE_DEMO_MODE === 'true';
-    const isDev = process.env.NODE_ENV !== 'production';
+    // 1. Verify Demo Mode or Dev Mode
+    const envDemo = this.configService.get('ENABLE_DEMO_MODE') ?? process.env.ENABLE_DEMO_MODE;
+    const envNode = this.configService.get('NODE_ENV') ?? process.env.NODE_ENV;
+
+    const isDemo = String(envDemo).toLowerCase() === 'true' || envDemo === '1' || envDemo === true;
+    const isDev = !envNode || String(envNode).toLowerCase() !== 'production';
 
     if (!isDemo && !isDev) {
-      throw new ForbiddenException('Simulation endpoints are disabled in production mode.');
+      throw new ForbiddenException('Simulation endpoints are disabled in production mode. Aktifkan ENABLE_DEMO_MODE=true di backend .env');
     }
 
     const profile = await this.prisma.sellerProfile.findUnique({
