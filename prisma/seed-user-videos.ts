@@ -1,0 +1,318 @@
+import 'dotenv/config';
+import { PrismaClient, ContentType, ContentDifficulty, ContentStatus } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const YOUTUBE_VIDEOS = [
+  {
+    type: ContentType.VIDEO,
+    title: 'Cara Mengolah Limbah Pertanian Menjadi Pakan Berkualitas Bagus',
+    slug: 'cara-mengolah-limbah-pertanian-menjadi-pakan-berkualitas',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 25,
+    videoDuration: 480,
+    secureUrl: 'https://www.youtube.com/watch?v=i_C3NUilEe8',
+    thumbnailUrl: 'https://img.youtube.com/vi/i_C3NUilEe8/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/i_C3NUilEe8/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Panduan video praktis dari Jaya Group Channel tentang pemanfaatan limbah pertanian (seperti kulit kacang, jerami, dedak, dan bungkil) yang dicacah dan difermentasi menjadi pakan ternak berprotein tinggi. Membahas formulasi nutrisi, teknik fermentasi anaerob, serta cara penyimpanan pakan agar tahan berbulan-bulan tanpa busuk.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Cara Mengolah Limbah Pertanian Menjadi Pupuk - Pak Bayu Diningrat',
+    slug: 'cara-mengolah-limbah-pertanian-menjadi-pupuk',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 25,
+    videoDuration: 420,
+    secureUrl: 'https://www.youtube.com/watch?v=kgoFUIipNcc',
+    thumbnailUrl: 'https://img.youtube.com/vi/kgoFUIipNcc/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/kgoFUIipNcc/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Pak Bayu Diningrat memaparkan rahasia mengolah limbah sisa panen pertanian menjadi pupuk organik bermutu tinggi. Mengulas aktivator mikroba pengurai, pengaturan rasio C/N limbah hijau dan cokelat, serta tahapan dekomposisi ramah lingkungan tanpa bau menyengat.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Cara Membuat Kompos Dari Sampah Rumah Tangga Pakai Ember',
+    slug: 'cara-membuat-kompos-sampah-rumah-tangga-ember',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 20,
+    videoDuration: 360,
+    secureUrl: 'https://www.youtube.com/watch?v=0qfGNQ499JA',
+    thumbnailUrl: 'https://img.youtube.com/vi/0qfGNQ499JA/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/0qfGNQ499JA/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Metode praktis pembuatan komposter ember tumpuk untuk mengolah sampah sisa sayur dan buah dapur keluarga. Menghasilkan dua output sekaligus: pupuk kompos padat subur dan lindi pupuk organik cair (POC) siap pakai untuk tanaman pekarangan.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Praktek Mengolah Limbah Pertanian Menjadi Pakan Ternak',
+    slug: 'praktek-mengolah-limbah-pertanian-jadi-pakan-ternak',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 25,
+    videoDuration: 510,
+    secureUrl: 'https://www.youtube.com/watch?v=MZVfrxeL0zg',
+    thumbnailUrl: 'https://img.youtube.com/vi/MZVfrxeL0zg/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/MZVfrxeL0zg/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Demonstrasi teknis pencacahan dan pemeraman limbah pertanian di kandang bersama Bayu Diningrat. Menjelaskan penggunaan tetes tebu (molase), garam mineral, dan inokulan bakteri asam laktat untuk menghasilkan silase pakan ternak sapi dan kambing yang harum dan disukai ternak.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Bikin Kompos Daun Kering Tanpa EM4 & Tanpa Molase',
+    slug: 'bikin-kompos-daun-kering-tanpa-em4-tanpa-molase',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 20,
+    videoDuration: 330,
+    secureUrl: 'https://www.youtube.com/watch?v=YRHcpHWtf6A',
+    thumbnailUrl: 'https://img.youtube.com/vi/YRHcpHWtf6A/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/YRHcpHWtf6A/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Inovasi pengomposan daun kering oleh Jarum Farm tanpa perlu membeli starter bakteri EM4 atau molase kimia. Memanfaatkan mikroorganisme lokal dari tanah humus kebun dan air cucian beras untuk mendekomposisi serasah daun menjadi kompos hitam gembur kaya humus.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Pembuatan Briket dari Pemanfaatan Limbah Pertanian',
+    slug: 'pembuatan-briket-dari-limbah-pertanian',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.MENENGAH,
+    rewardPoint: 30,
+    videoDuration: 450,
+    secureUrl: 'https://www.youtube.com/watch?v=ol8CF1n29oA',
+    thumbnailUrl: 'https://img.youtube.com/vi/ol8CF1n29oA/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/ol8CF1n29oA/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Proses teknologi pembuatan briket energi biomassa ramah lingkungan dari sisa limbah pertanian oleh SMKN 1 Sukorejo. Meliputi tahapan karbonisasi pirolisis, penumbukan arang, pencampuran perekat tapioka, dan pencetakan hidrolik/manual bertekanan tinggi.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Cara Mengolah Limbah Pertanian Menjadi Pakan Ternak Murah & Berkualitas',
+    slug: 'mengolah-limbah-pertanian-menjadi-pakan-murah-berkualitas',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 25,
+    videoDuration: 540,
+    secureUrl: 'https://www.youtube.com/watch?v=rGy7GonuOMI',
+    thumbnailUrl: 'https://img.youtube.com/vi/rGy7GonuOMI/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/rGy7GonuOMI/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Panduan strategi memangkas biaya pakan ternak hingga 50% memanfaatkan limbah kebun dan sawah di pedesaan bersama Bayu Sehat Mandiri. Membahas penanganan kadar air, penambahan urea pakan secara aman, dan proses fermentasi terpal plastik.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Cara Olah Limbah Kelapa Jadi Cocobristle & Cocopeat',
+    slug: 'cara-olah-limbah-kelapa-jadi-cocobristle',
+    category: 'ALAT',
+    difficulty: ContentDifficulty.MENENGAH,
+    rewardPoint: 30,
+    videoDuration: 390,
+    secureUrl: 'https://www.youtube.com/watch?v=cs9JtenT574',
+    thumbnailUrl: 'https://img.youtube.com/vi/cs9JtenT574/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/cs9JtenT574/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Langkah pengoperasian mesin pemecah dan penyisir sabut kelapa menjadi serat panjang (cocobristle) dan serbuk cocopeat media tanam berdaya jual tinggi. Pelajari standar kebersihan serat, penurunan kadar garam, dan potensi ekspor industri serabut kelapa.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Kompos Daun Pisang: Jawaranya Kompos Organik Kaya Kalium',
+    slug: 'kompos-daun-pisang-jawara-kompos-organik',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 25,
+    videoDuration: 380,
+    secureUrl: 'https://www.youtube.com/watch?v=doM7CGTZgBQ',
+    thumbnailUrl: 'https://img.youtube.com/vi/doM7CGTZgBQ/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/doM7CGTZgBQ/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Pembahasan mendalam tentang keistimewaan daun pisang kering sebagai bahan baku kompos premium. Daun pisang memiliki kandungan kalium alami sangat tinggi yang sangat dibutuhkan tanaman fase pembungaan dan pembuahan agar tidak mudah rontok.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Ubah Kulit Padi Jadi Arang Sekam: Modal Sedikit Untung Membukit',
+    slug: 'ubah-kulit-padi-jadi-arang-sekam-untung-membukit',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 30,
+    videoDuration: 600,
+    secureUrl: 'https://www.youtube.com/watch?v=m22Og3Sg73I',
+    thumbnailUrl: 'https://img.youtube.com/vi/m22Og3Sg73I/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/m22Og3Sg73I/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Kisah inspiratif dan tutorial praktis CapCapung membakar sekam padi menjadi arang sekam tanpa menjadi abu. Menjelaskan konstruksi cerobong kawat ram, pengaturan sirkulasi udara pembakaran, serta pengemasan dan penjualan media tanam ke nurseri tanaman hias.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Membuat Briket Sekam Padi untuk Industri Rumahan UMKM',
+    slug: 'membuat-briket-sekam-padi-untuk-industri-rumahan',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.MENENGAH,
+    rewardPoint: 30,
+    videoDuration: 420,
+    secureUrl: 'https://www.youtube.com/watch?v=iEI5o1WifO4',
+    thumbnailUrl: 'https://img.youtube.com/vi/iEI5o1WifO4/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/iEI5o1WifO4/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Peluang usaha ekonomi sirkular briket sekam padi skala rumahan. Membahas resep adonan arang sekam, perekat kanji, pencetakan briket heksagonal berlubang tengah untuk aliran oksigen, dan uji nyala api bebas asap.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Pengelolaan Limbah Kulit Kopi & Tongkol Jagung Jadi Biochar',
+    slug: 'pengelolaan-limbah-kulit-kopi-dan-tongkol-jagung-biochar',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.MENENGAH,
+    rewardPoint: 30,
+    videoDuration: 480,
+    secureUrl: 'https://www.youtube.com/watch?v=6EVsV9s8PzA',
+    thumbnailUrl: 'https://img.youtube.com/vi/6EVsV9s8PzA/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/6EVsV9s8PzA/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Riset dan panduan pengabdian Fakultas Pertanian UNPAD mengenai konversi limbah perkebunan kopi dan limbah tongkol jagung menjadi biochar pembenah tanah. Biochar mampu mengikat karbon ratusan tahun, meningkatkan retensi air lahan kering, dan menstabilkan pH tanah masam.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Ayo Buat dan Gunakan Kompos - Panduan Resmi Kementan',
+    slug: 'ayo-buat-dan-gunakan-kompos-resmi-kementan',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 20,
+    videoDuration: 300,
+    secureUrl: 'https://www.youtube.com/watch?v=s66d2FXvsyA',
+    thumbnailUrl: 'https://img.youtube.com/vi/s66d2FXvsyA/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/s66d2FXvsyA/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Video edukasi resmi dari Pustaka Kementerian Pertanian RI mengenai gerakan pemanfaatan kompos organik di lahan pertanian rakyat. Menjelaskan standar kematangan kompos, ciri fisik bebas patogen, dan manfaat jangka panjang pengembalian biomassa ke tanah.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Mengolah Limbah Ikan Menjadi Asam Amino & Pupuk Organik Cair',
+    slug: 'mengolah-limbah-ikan-menjadi-asam-amino-poc',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 25,
+    videoDuration: 460,
+    secureUrl: 'https://www.youtube.com/watch?v=O-b9Q46WUww',
+    thumbnailUrl: 'https://img.youtube.com/vi/O-b9Q46WUww/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/O-b9Q46WUww/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Bayu Diningrat mendemonstrasikan cara fermentasi limbah jeroan dan sisa ikan basah menjadi cairan asam amino pekat. Asam amino alami ini berfungsi sebagai biostimulan pemulih stres tanaman, merangsang klorofil, dan memacu pertumbuhan vegetatif pesat.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Belajar dari Jepang: Sukses Buat Pupuk Tanpa Tanah Cepat Berbuah',
+    slug: 'belajar-dari-jepang-pupuk-organik-tanpa-tanah',
+    category: 'OLAHAN',
+    difficulty: ContentDifficulty.MENENGAH,
+    rewardPoint: 30,
+    videoDuration: 580,
+    secureUrl: 'https://www.youtube.com/watch?v=OuooGEU8zUE',
+    thumbnailUrl: 'https://img.youtube.com/vi/OuooGEU8zUE/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/OuooGEU8zUE/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Cerita usaha dan teknologi pembuatan pupuk bokashi semi-fermentasi ala petani Jepang oleh OASIS. Membahas perpaduan dedak halus, arang sekam, tepung tulang, dan mikroba pengurai yang membuat pohon buah dalam pot (tabulampot) cepat berbunga dan manis.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Olah 15 Ribu Liter Sampah Organik Menjadi 20 Ton Kompos Massal',
+    slug: 'olah-15-ribu-liter-sampah-organik-jadi-20-ton-kompos',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.MENENGAH,
+    rewardPoint: 35,
+    videoDuration: 650,
+    secureUrl: 'https://www.youtube.com/watch?v=G-Olk13YZCs',
+    thumbnailUrl: 'https://img.youtube.com/vi/G-Olk13YZCs/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/G-Olk13YZCs/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Dokumentasi Tanilink TV tentang pengelolaan limbah organik perkotaan skala komunitas (Urban Compost). Menunjukkan sistem bak komposting bertingkat aerasi pasif, pembalikan berkala, pemisahan kontaminan plastik, dan hasil panen kompos massal berdaya guna tinggi.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Solusi Pupuk Indonesia Dalam Mengolah Limbah Pertanian Sirkular',
+    slug: 'solusi-pupuk-indonesia-olah-limbah-pertanian-sirkular',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 25,
+    videoDuration: 360,
+    secureUrl: 'https://www.youtube.com/watch?v=mdxT5n4dy7s',
+    thumbnailUrl: 'https://img.youtube.com/vi/mdxT5n4dy7s/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/mdxT5n4dy7s/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-001',
+    content: 'Paparan edukasi PT Pupuk Indonesia Official mengenai inisiatif ekonomi sirkular limbah agrikultur nasional. Menghubungkan petani produsen limbah panen dengan fasilitas pengolahan pupuk granul organik dan dekomposer mikroba berstandar SNI.',
+  },
+  {
+    type: ContentType.VIDEO,
+    title: 'Pembuatan Kompos Berkualitas dari Limbah Ampas Tebu (Bagasse)',
+    slug: 'pembuatan-kompos-berkualitas-limbah-ampas-tebu',
+    category: 'LIMBAH',
+    difficulty: ContentDifficulty.PEMULA,
+    rewardPoint: 20,
+    videoDuration: 320,
+    secureUrl: 'https://www.youtube.com/watch?v=50SMQ4zw-60',
+    thumbnailUrl: 'https://img.youtube.com/vi/50SMQ4zw-60/hqdefault.jpg',
+    imageUrl: 'https://img.youtube.com/vi/50SMQ4zw-60/hqdefault.jpg',
+    status: ContentStatus.PUBLISHED,
+    authorId: 'seed-seller-002',
+    content: 'Panduan pengabdian KKN Lembah Sari mengenai pengolahan ampas tebu sisa penggilingan minuman tebu. Ampas tebu yang berserat tinggi dicampur kotoran ternak dan tetes tebu untuk mempercepat pelapukan menjadi kompos berporositas unggul.',
+  },
+];
+
+async function seedVideos() {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pool);
+  const prisma = new PrismaClient({ adapter });
+
+  console.log(`🎬 Memulai sinkronisasi ${YOUTUBE_VIDEOS.length} video edukasi YouTube ke database...\n`);
+
+  let added = 0;
+  let updated = 0;
+
+  for (const item of YOUTUBE_VIDEOS) {
+    const existing = await prisma.knowledgeContent.findUnique({
+      where: { slug: item.slug },
+    });
+
+    if (existing) {
+      await prisma.knowledgeContent.update({
+        where: { id: existing.id },
+        data: item,
+      });
+      updated++;
+      console.log(`  🔄 Diperbarui: ${item.title}`);
+    } else {
+      await prisma.knowledgeContent.create({
+        data: item,
+      });
+      added++;
+      console.log(`  ✅ Ditambahkan: ${item.title}`);
+    }
+  }
+
+  console.log(`\n🎉 Selesai! Ditambahkan: ${added}, Diperbarui: ${updated}`);
+  await prisma.$disconnect();
+  await pool.end();
+}
+
+seedVideos().catch((err) => {
+  console.error('Gagal melakukan seed video:', err);
+  process.exit(1);
+});
