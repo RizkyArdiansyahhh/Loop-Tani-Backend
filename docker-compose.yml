@@ -14,5 +14,12 @@ services:
     ports:
       - 5432:5432
 
+  redis:
+    image: redis:alpine
+    container_name: ecomerce-redis
+    restart: always
+    ports:
+      - 6379:6379
+
 volumes:
   postgres_data:

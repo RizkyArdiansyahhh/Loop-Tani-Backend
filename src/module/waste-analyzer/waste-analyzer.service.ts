@@ -115,7 +115,24 @@ const WASTE_ANALYSIS_SCHEMA = {
   ],
 };
 
-const SYSTEM_INSTRUCTION = `
+@Injectable()
+export class WasteAnalyzerService {
+  private readonly ai: GoogleGenAI;
+
+  constructor(private readonly configService: ConfigService) {
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY_CV');
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not defined');
+    }
+    this.ai = new GoogleGenAI({ apiKey });
+  }
+
+  private getSystemInstruction(isEnglish: boolean): string {
+    const langRule = isEnglish
+      ? '11. Output language: Use English for all textual descriptions (category, color, state, environment, processingPotential items, potentialValue, marketOpportunity, notes). Always provide englishName in English and indonesianName in Indonesian.'
+      : '11. Output language: Use Indonesian language for textual descriptions (indonesianName, category, color, state, environment, processingPotential items, potentialValue, marketOpportunity, notes) and English for englishName.';
+
+    return `
 You are Limbah Analyzer, an AI computer vision assistant for agricultural waste analysis.
 
 Your task is to analyze uploaded images of agricultural waste.
@@ -132,14 +149,36 @@ You must follow these rules:
 8. Do not return explanations outside the JSON structure.
 9. The response must always be valid JSON according to the schema.
 10. The analysis is an estimate and must not be treated as a guaranteed market price.
-11. Use Indonesian language for textual descriptions (indonesianName, category, color, state, environment, processingPotential items, potentialValue, marketOpportunity, notes) and English for englishName.
+${langRule}
 12. Be conservative when identifying waste. If uncertain, set values to "Tidak Diketahui" / "Unknown" or empty strings/arrays.
 13. \`confidenceScore\` must be a number between 0.0 and 1.0 (e.g. 0.95 for 95% confidence).
 14. \`processingPotential\` must be a non-empty array of 3 to 5 actionable processing recommendations.
-15. IMPORTANT: Keep \`indonesianName\`, \`category\`, \`color\`, \`state\`, and \`environment\` concise (2 to 4 words max). Place any detailed explanations in \`economicEstimation.notes\`.
+15. IMPORTANT: Keep \`indonesianName\`, \`englishName\`, \`category\`, \`color\`, \`state\`, and \`environment\` concise (2 to 4 words max). Place any detailed explanations in \`economicEstimation.notes\`.
 `;
+  }
 
-const USER_PROMPT = `
+  private getUserPrompt(isEnglish: boolean): string {
+    if (isEnglish) {
+      return `
+Analyze this image as agricultural waste.
+
+Identify clearly visible agricultural waste objects only.
+
+Do not guess if the image is not clear enough.
+
+Provide results strictly in JSON format according to the response schema in English.
+
+Focus on:
+- wasteIdentification (indonesianName, englishName [concise 2-4 words], category, confidenceScore)
+- visualCondition (color [concise], state [concise 2-4 words], environment [concise])
+- processingPotential (array of 3-5 actionable processing/upcycling recommendations in English)
+- economicEstimation (potentialValue, marketOpportunity, notes [detailed explanation in English])
+
+If the image is not agricultural waste, return isAgriculturalWaste=false.
+`;
+    }
+
+    return `
 Analisis gambar ini sebagai limbah pertanian.
 
 Identifikasi hanya objek limbah pertanian yang terlihat jelas.
@@ -156,17 +195,6 @@ Fokus pada:
 
 Jika gambar bukan limbah pertanian, kembalikan isAgriculturalWaste=false.
 `;
-
-@Injectable()
-export class WasteAnalyzerService {
-  private readonly ai: GoogleGenAI;
-
-  constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY_CV');
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not defined');
-    }
-    this.ai = new GoogleGenAI({ apiKey });
   }
 
   private cleanShortLabel(text: string, defaultVal: string, maxLen: number = 40): string {
@@ -181,36 +209,36 @@ export class WasteAnalyzerService {
     return trimmed.substring(0, maxLen).trim() + '...';
   }
 
-  private normalizeResponse(parsed: any): WasteAnalysisResult {
+  private normalizeResponse(parsed: any, isEnglish: boolean = false): WasteAnalysisResult {
     const rawName =
       parsed.wasteIdentification?.indonesianName ||
       parsed.wasteType ||
       parsed.wasteAnalysis?.primaryWasteType ||
       parsed.detectedWaste?.[0]?.name ||
-      'Limbah Pertanian';
+      (isEnglish ? 'Agricultural Waste' : 'Limbah Pertanian');
 
     const rawCategory =
       parsed.wasteIdentification?.category ||
       parsed.category ||
       parsed.wasteAnalysis?.categories?.[0] ||
       parsed.detectedWaste?.[0]?.category ||
-      'Limbah Pertanian';
+      (isEnglish ? 'Agricultural Waste' : 'Limbah Pertanian');
 
     const rawColor =
       parsed.visualCondition?.color ||
       parsed.color ||
-      'Alami';
+      (isEnglish ? 'Natural' : 'Alami');
 
     const rawState =
       parsed.visualCondition?.state ||
       parsed.condition ||
       parsed.detectedWaste?.[0]?.visualCondition ||
-      'Sedang';
+      (isEnglish ? 'Moderate' : 'Sedang');
 
     const rawEnv =
       parsed.visualCondition?.environment ||
       parsed.environment ||
-      'Lahan Pertanian';
+      (isEnglish ? 'Open Farmland' : 'Lahan Pertanian');
 
     const wasteIdentification = {
       indonesianName: this.cleanShortLabel(rawName, 'Limbah Pertanian', 45),
@@ -219,7 +247,7 @@ export class WasteAnalyzerService {
         parsed.englishName ||
         'Agricultural Waste'
       ),
-      category: this.cleanShortLabel(rawCategory, 'Limbah Pertanian', 35),
+      category: this.cleanShortLabel(rawCategory, isEnglish ? 'Agricultural Waste' : 'Limbah Pertanian', 35),
       confidenceScore: Number(
         parsed.wasteIdentification?.confidenceScore ||
         parsed.confidence ||
@@ -230,9 +258,9 @@ export class WasteAnalyzerService {
     };
 
     const visualCondition = {
-      color: this.cleanShortLabel(rawColor, 'Alami', 30),
-      state: this.cleanShortLabel(rawState, 'Sedang', 35),
-      environment: this.cleanShortLabel(rawEnv, 'Lahan Pertanian', 35),
+      color: this.cleanShortLabel(rawColor, isEnglish ? 'Natural' : 'Alami', 30),
+      state: this.cleanShortLabel(rawState, isEnglish ? 'Moderate' : 'Sedang', 35),
+      environment: this.cleanShortLabel(rawEnv, isEnglish ? 'Open Farmland' : 'Lahan Pertanian', 35),
     };
 
     let rawProcessing: any[] = [];
@@ -259,11 +287,17 @@ export class WasteAnalyzerService {
     );
 
     if (processingPotential.length === 0) {
-      processingPotential = [
-        'Pengomposan secara aerobik/anaerobik untuk pupuk organik berkualitas',
-        'Pemanfaatan sebagai pakan ternak (sapi/kambing) setelah pencacahan',
-        'Bahan baku briket biomassa atau bahan bakar energi alternatif',
-      ];
+      processingPotential = isEnglish
+        ? [
+            'Aerobic or anaerobic composting for high-quality organic fertilizer',
+            'Utilization as livestock feed (cattle/goats) after shredding',
+            'Raw material for biomass briquettes or alternative energy fuel',
+          ]
+        : [
+            'Pengomposan secara aerobik/anaerobik untuk pupuk organik berkualitas',
+            'Pemanfaatan sebagai pakan ternak (sapi/kambing) setelah pencacahan',
+            'Bahan baku briket biomassa atau bahan bakar energi alternatif',
+          ];
     }
 
     const initialNotes =
@@ -276,10 +310,14 @@ export class WasteAnalyzerService {
     // If rawState or rawEnv was very long, append it cleanly to notes for full context
     let finalNotes = initialNotes;
     if (rawState.length > 35 && !finalNotes.includes(rawState)) {
-      finalNotes = `Kondisi fisik: ${rawState}. ${finalNotes}`.trim();
+      finalNotes = isEnglish
+        ? `Physical condition: ${rawState}. ${finalNotes}`.trim()
+        : `Kondisi fisik: ${rawState}. ${finalNotes}`.trim();
     }
     if (!finalNotes) {
-      finalNotes = 'Potensi nilai ekonomi bergantung pada kadar air, kebersihan, dan pengolahan limbah.';
+      finalNotes = isEnglish
+        ? 'Economic potential depends on moisture content, purity, and post-harvest processing.'
+        : 'Potensi nilai ekonomi bergantung pada kadar air, kebersihan, dan pengolahan limbah.';
     }
 
     const economicEstimation = {
@@ -295,7 +333,7 @@ export class WasteAnalyzerService {
         parsed.economicEstimation?.marketOpportunity ||
         parsed.economicPotential?.marketOpportunity ||
         parsed.economicPotential?.level ||
-        'Tinggi (Permintaan Lokal)'
+        (isEnglish ? 'High (Local Demand)' : 'Tinggi (Permintaan Lokal)')
       ),
       notes: finalNotes,
     };
@@ -322,8 +360,17 @@ export class WasteAnalyzerService {
   async analyzeImage(
     fileBuffer: Buffer,
     mimeType: string,
+    locale: string = 'id',
   ): Promise<WasteAnalysisResult> {
-    const modelsToTry = ['gemini-3.5-flash', 'gemini-2.5-flash'];
+    const isEnglish = (locale || '').toLowerCase().startsWith('en');
+    const systemInstruction = this.getSystemInstruction(isEnglish);
+    const userPrompt = this.getUserPrompt(isEnglish);
+
+    const modelsToTry = [
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3.5-flash',
+    ];
     const imagePart = {
       inlineData: {
         data: fileBuffer.toString('base64'),
@@ -338,9 +385,9 @@ export class WasteAnalyzerService {
         try {
           const response = await this.ai.models.generateContent({
             model,
-            contents: [USER_PROMPT, imagePart],
+            contents: [userPrompt, imagePart],
             config: {
-              systemInstruction: SYSTEM_INSTRUCTION,
+              systemInstruction,
               responseMimeType: 'application/json',
               responseSchema: WASTE_ANALYSIS_SCHEMA,
             },
@@ -350,7 +397,7 @@ export class WasteAnalyzerService {
           const cleanedJsonText = this.extractJsonString(rawText);
 
           const parsed = JSON.parse(cleanedJsonText);
-          const normalized = this.normalizeResponse(parsed);
+          const normalized = this.normalizeResponse(parsed, isEnglish);
           console.log('Normalized Waste Analysis Result:', normalized);
           return normalized;
         } catch (e: any) {
@@ -361,7 +408,7 @@ export class WasteAnalyzerService {
           );
 
           if (attempt < 2) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 300));
           }
         }
       }
@@ -369,7 +416,9 @@ export class WasteAnalyzerService {
 
     console.error('Gemini Vision API error after all retries and fallbacks:', lastError);
     throw new InternalServerErrorException(
-      'Analisis limbah sedang mengalami lonjakan beban tinggi di server AI. Silakan coba beberapa saat lagi.',
+      isEnglish
+        ? 'Waste analysis service is currently experiencing high load. Please try again shortly.'
+        : 'Analisis limbah sedang mengalami lonjakan beban tinggi di server AI. Silakan coba beberapa saat lagi.',
     );
   }
 }

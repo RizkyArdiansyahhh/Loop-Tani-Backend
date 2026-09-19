@@ -76,7 +76,7 @@ async function main() {
   // 3. Ensure all 20 valid articles have correct local image URLs
   console.log('Verifying 20 valid articles imageUrl...');
   for (const slug of VALID_ARTICLE_SLUGS) {
-    const expectedUrl = `/images/panduan/${slug}.jpg`;
+    const expectedUrl = `/images/panduan/${slug}.webp`;
     await prisma.knowledgeContent.updateMany({
       where: { slug },
       data: { imageUrl: expectedUrl },

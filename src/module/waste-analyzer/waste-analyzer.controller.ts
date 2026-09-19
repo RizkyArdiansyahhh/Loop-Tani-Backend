@@ -5,6 +5,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -51,6 +52,7 @@ export class WasteAnalyzerController {
   })
   async analyzeWaste(
     @UploadedFile() file?: Express.Multer.File,
+    @Body('locale') locale?: string,
   ) {
     if (!file) {
       throw new BadRequestException('File gambar wajib diunggah');
@@ -69,6 +71,7 @@ export class WasteAnalyzerController {
     const result = await this.wasteAnalyzerService.analyzeImage(
       file.buffer,
       file.mimetype,
+      locale || 'id',
     );
 
     return {
