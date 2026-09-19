@@ -31,6 +31,7 @@ Aturan Respon & Format:
    - Jejak Lestari (Jejak Karbon): [🌍 Cek Jejak Lestari](/id/jejak-lestari)
    - Marketplace: [🛒 Jelajahi Marketplace](/id/marketplace)
 5. Batasan Topik: Jika pertanyaan di luar domain pertanian, limbah, pupuk, atau LoopTani, tolak secara sopan.
+6. LARANGAN ICON/EMOJI BINTANG: DILARANG menggunakan emoji atau icon bintang dan kilau (seperti ✨ atau ⭐ atau 🌟). Gunakan emoji bertema pertanian dan sirkular seperti 🌱, 🌾, ♻️, 🌿, 🚜, 🛒.
 `;
 
 const CHAT_TOOLS: any[] = [
@@ -200,7 +201,6 @@ export class ChatbotService {
           id: true,
           title: true,
           price: true,
-          images: true,
           city: true,
           province: true,
           seller: {
@@ -238,73 +238,96 @@ export class ChatbotService {
       return item;
     });
 
-    const modelName = 'gemini-3.5-flash';
+    const candidateModels = [
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+    ];
 
-    try {
-      const response = await this.ai.models.generateContent({
-        model: modelName,
-        contents: formattedContents,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          tools: CHAT_TOOLS,
-        },
-      });
+    let lastError: any = null;
 
-      // Check if Gemini requested function calls
-      if (response.functionCalls && response.functionCalls.length > 0) {
-        const functionCall = response.functionCalls[0];
-        const toolResult = await this.executeTool(functionCall);
-
-        const modelTurnContent = response.candidates?.[0]?.content || {
-          role: 'model',
-          parts: [{ functionCall }],
-        };
-
-        // Turn 2: Pass function response back to Gemini to generate natural response
-        const secondResponse = await this.ai.models.generateContent({
+    for (const modelName of candidateModels) {
+      try {
+        const response = await this.ai.models.generateContent({
           model: modelName,
-          contents: [
-            ...formattedContents,
-            modelTurnContent,
-            {
-              role: 'user',
-              parts: [
-                {
-                  functionResponse: {
-                    name: functionCall.name || 'tool',
-                    response: toolResult,
-                  },
-                },
-              ],
-            },
-          ],
+          contents: formattedContents,
           config: {
             systemInstruction: SYSTEM_INSTRUCTION,
             tools: CHAT_TOOLS,
+            temperature: 0.7,
+            maxOutputTokens: 1024,
           },
         });
 
-        return secondResponse.text || '';
-      }
+        // Check if Gemini requested function calls
+        if (response.functionCalls && response.functionCalls.length > 0) {
+          const functionCall = response.functionCalls[0];
+          const toolResult = await this.executeTool(functionCall);
 
-      return response.text || '';
-    } catch (e) {
-      console.error('Gemini API error with tools:', e);
-      // Fallback without tools if error occurs
+          const modelTurnContent = response.candidates?.[0]?.content || {
+            role: 'model',
+            parts: [{ functionCall }],
+          };
+
+          // Turn 2: Pass function response back to Gemini to generate natural response
+          const secondResponse = await this.ai.models.generateContent({
+            model: modelName,
+            contents: [
+              ...formattedContents,
+              modelTurnContent,
+              {
+                role: 'user',
+                parts: [
+                  {
+                    functionResponse: {
+                      name: functionCall.name || 'tool',
+                      response: toolResult,
+                    },
+                  },
+                ],
+              },
+            ],
+            config: {
+              systemInstruction: SYSTEM_INSTRUCTION,
+              tools: CHAT_TOOLS,
+              temperature: 0.7,
+              maxOutputTokens: 1024,
+            },
+          });
+
+          return secondResponse.text || '';
+        }
+
+        return response.text || '';
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`[Chatbot] Gemini warning (model: ${modelName}):`, e?.message || e);
+        // Fallback to next candidate model
+      }
+    }
+
+    console.error('[Chatbot] All candidate models failed with tools:', lastError);
+
+    // Final fallback attempt: Try simplest model without tools
+    for (const modelName of candidateModels.slice(0, 2)) {
       try {
         const fallback = await this.ai.models.generateContent({
           model: modelName,
           contents: formattedContents,
           config: {
             systemInstruction: SYSTEM_INSTRUCTION,
+            temperature: 0.7,
+            maxOutputTokens: 1024,
           },
         });
         return fallback.text || 'Maaf, Loopi sedang mengalami kendala jaringan.';
-      } catch (err) {
-        console.error('Gemini fallback error:', err);
-        return 'Maaf, Loopi sedang tidak dapat memproses permintaan Anda saat ini.';
+      } catch (err: any) {
+        console.warn(`[Chatbot] Fallback warning (model: ${modelName}):`, err?.message || err);
       }
     }
+
+    return 'Maaf, Loopi sedang tidak dapat memproses permintaan Anda saat ini.';
   }
 
   async sendMessage(dto: SendMessageDto, userId?: string) {
